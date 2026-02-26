@@ -1,0 +1,74 @@
+=========================
+
+Environment Variables (CRITICAL)
+
+=========================
+
+Never commit secrets, passwords, or API keys!
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+=========================
+
+Python / FastAPI (Backend & Workers)
+
+=========================
+
+pycache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+dist/
+*.egg-info/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+=========================
+
+Node / React / Vite (Frontends)
+
+=========================
+
+node_modules/
+dist-ssr/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+=========================
+
+Docker & Database
+
+=========================
+
+postgres_data/
+pgdata/
+*.db
+*.sqlite3
+
+=========================
+
+IDEs and OS Files
+
+=========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # 1. The Database (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: crm_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: crm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. The Python API & Workers (FastAPI)
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crm_backend
+    volumes:
+      - ./backend:/app  # Hot-reloading for local dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:rootpassword@db:5432/crm_db
+    depends_on:
+      - db
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 3. Public Booking App (React/Vite)
+  frontend-public:
+    build:
+      context: ./frontend-public
+      dockerfile: Dockerfile
+    container_name: crm_public_app
+    volumes:
+      - ./frontend-public:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173" # Standard Vite port
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: npm run dev -- --host
+
+  # 4. Admin CRM Dashboard (React/Vite)
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: crm_admin_app
+    volumes:
+      - ./frontend-admin:/app
+      - /app/node_modules
+    ports:
+      - "5174:5174" # Slightly different port so they don't clash
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: npm run dev -- --host
+
+# Persistent storage for the database so you don't lose leads on restart
+volumes:
+  postgres_data:
