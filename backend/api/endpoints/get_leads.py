@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
 from typing import List, Optional
 from datetime import date, timedelta 
-from app.database import SessionLocal, Lead
+from database import SessionLocal
+from models import Lead
 
 router = APIRouter()
 

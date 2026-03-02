@@ -4,7 +4,9 @@ import logging
 import json
 import os
 from datetime import datetime
-from app.database import SessionLocal, Lead
+from database import SessionLocal
+from models import Lead
+
 
 # --- LOGGING CONFIGURATION ---
 if not os.path.exists("logs"):

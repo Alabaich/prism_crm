@@ -11,7 +11,7 @@ class LoginRequest(BaseModel):
     password: str
 
 # Шлях до файлу (оскільки docker запускає main.py з кореня backend, файл шукаємо там же)
-USERS_FILE = "app/users.json"
+USERS_FILE = "users.json" 
 
 @router.post("/login")
 async def login_user(creds: LoginRequest):
