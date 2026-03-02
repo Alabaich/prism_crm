@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import axios from "axios";
-import type { Lead, DateRange } from "../types";
+import type { Lead, DateRange, OverlapGroup } from "../types";
 
 const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
 
@@ -11,10 +11,11 @@ export function useAnalyticsData() {
   });
 
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]); // New state for bookings
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchAnalyticsData = async () => {
+    const fetchAllAnalyticsData = async () => {
       setLoading(true);
       try {
         const params = new URLSearchParams({
@@ -23,8 +24,15 @@ export function useAnalyticsData() {
           limit: "5000",
           skip: "0",
         });
-        const response = await axios.get(`http://localhost:8000/get_leads/?${params.toString()}`);
-        setAllLeads(response.data);
+
+        // Fetch both Leads and Bookings in parallel
+        const [leadsRes, bookingsRes] = await Promise.all([
+          axios.get(`http://localhost:8000/get_leads/?${params.toString()}`),
+          axios.get(`http://localhost:8000/admin/bookings/`) 
+        ]);
+
+        setAllLeads(leadsRes.data);
+        setAllBookings(bookingsRes.data);
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
       } finally {
@@ -32,21 +40,27 @@ export function useAnalyticsData() {
       }
     };
 
-    fetchAnalyticsData();
+    fetchAllAnalyticsData();
   }, [dateRange]);
 
   const analytics = useMemo(() => {
+    // Existing groupings
     const leadsByDate: Record<string, number> = {};
     const uniqueLeadsBySource: Record<string, Set<string>> = {};
     const totalLeadsBySource: Record<string, number> = {};
     const emailToSources: Record<string, string[]> = {};
     const emailToLeads: Record<string, Lead[]> = {};
+    
+    // New conversion grouping
+    const bookingsBySource: Record<string, number> = {};
 
+    // 1. Process Leads
     allLeads.forEach((lead) => {
       const dateLabel = new Date(lead.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
       leadsByDate[dateLabel] = (leadsByDate[dateLabel] || 0) + 1;
 
-      const source = lead.source || "Unknown";
+      const source = lead.source || "Direct / Website";
+      
       if (!uniqueLeadsBySource[source]) {
         uniqueLeadsBySource[source] = new Set();
         totalLeadsBySource[source] = 0;
@@ -62,6 +76,38 @@ export function useAnalyticsData() {
       }
     });
 
+    // 2. Process Bookings (Filter by date range manually)
+    allBookings.forEach((booking) => {
+      const bookingDate = new Date(booking.date).toISOString().split('T')[0];
+      
+      // Only count bookings that fall within the selected Analytics date range
+      if (bookingDate >= dateRange.start && bookingDate <= dateRange.end) {
+        const source = booking.source || "Direct / Website";
+        bookingsBySource[source] = (bookingsBySource[source] || 0) + 1;
+      }
+    });
+
+    // 3. Generate Conversion Data for Chart
+    // We only display sources that aren't the internal "Tour Booking App"
+    const tourConversionData = Object.keys(totalLeadsBySource)
+      .filter(source => source !== "Tour Booking App")
+      .map(source => {
+        const totalLeads = totalLeadsBySource[source] || 0;
+        const bookedTours = bookingsBySource[source] || 0;
+        const conversionRate = totalLeads > 0 
+          ? Math.round((bookedTours / totalLeads) * 100) 
+          : 0;
+
+        return {
+          label: source,
+          conversionRate,
+          totalLeads,
+          bookedTours
+        };
+      })
+      .sort((a, b) => b.conversionRate - a.conversionRate);
+
+    // Existing Chart/Stats formatting
     const chartData = Object.entries(leadsByDate)
       .map(([label, value]) => ({ label, value }))
       .sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
@@ -124,8 +170,9 @@ export function useAnalyticsData() {
       chartData,
       pieChartData,
       overlappingGroups,
+      tourConversionData // Returning new dataset
     };
-  }, [allLeads]);
+  }, [allLeads, allBookings, dateRange]);
 
   const growthPercentage = useMemo(() => {
     const previousTotal: number = 150; 

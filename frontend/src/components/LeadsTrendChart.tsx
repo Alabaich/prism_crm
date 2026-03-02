@@ -11,7 +11,7 @@ export const LeadsTrendChart: React.FC<LeadsTrendChartProps> = ({ data, totalVal
   const maxVal = Math.max(...data.map(d => d.value), 10);
   
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm w-full mb-8">
+    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm w-full">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Leads Acquisition Trend</h2>

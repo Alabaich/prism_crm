@@ -9,6 +9,7 @@ export const AdminLayout: React.FC = () => {
 
   const navLinks = [
     { path: '/admin', label: 'Overview' },
+    { path: '/admin/booking', label: 'Tours & Bookings' },
     { path: '/admin/analytics', label: 'Analytics' },
   ];
 
@@ -27,10 +28,7 @@ export const AdminLayout: React.FC = () => {
       
       <div className="flex flex-1 overflow-hidden">
         {/* Admin Sidebar */}
-        <aside className="w-64 bg-slate-900 text-white flex flex-col">
-          <div className="p-4 border-b border-slate-800">
-            <span className="text-xs uppercase tracking-wider font-bold text-slate-400">Menu</span>
-          </div>
+        <aside className="w-64 bg-white text-slate-800 flex flex-col">
           <nav className="flex-1 flex flex-col gap-1 p-4">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
@@ -38,7 +36,7 @@ export const AdminLayout: React.FC = () => {
                 <Link 
                   key={link.path} 
                   to={link.path} 
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-800 hover:text-white'}`}
                 >
                   {link.label}
                 </Link>

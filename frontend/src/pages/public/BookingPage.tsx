@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Calendar as CalendarIcon, Clock, MapPin, User, Mail, Phone, CheckCircle2 } from 'lucide-react';
 import { format, addDays, startOfToday, isSunday } from 'date-fns';
-import Header from '../components/Header'; // Ensure you have this header component from your project
+import Header from '../../components/Header'; // Ensure you have this header component from your project
 
 const BUILDINGS = ['80 Bond St E', '100 Bond St E'];
 const TIME_SLOTS = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
@@ -28,12 +28,12 @@ const BookingPage: React.FC = () => {
       if (!formData.building || !formData.date) return;
       setIsLoadingSlots(true);
       try {
-        // TODO: Backend (FastAPI) implementation needed for GET /api/bookings/taken
         const res = await fetch(`http://localhost:8000/api/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`);
         
         if (res.ok) {
           const data = await res.json();
           setTakenSlots(data);
+          // If the currently selected time just became unavailable, clear it
           if (data.includes(formData.time)) {
             setFormData(prev => ({ ...prev, time: '' }));
           }
@@ -68,8 +68,27 @@ const BookingPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // TODO: Backend (FastAPI) implementation needed for POST /api/bookings
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('http://localhost:8000/api/bookings/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          building: formData.building,
+          date: formData.date,
+          time: formData.time,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'Failed to create booking. Please try again.');
+      }
+
+      // Success! Move to confirmation step
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -84,7 +103,6 @@ const BookingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col">
-      {/* Assuming Header handles navigation in your current setup */}
       <Header currentView="booking" />
       <main className="flex-1 w-full px-4 py-12">
         <div className="max-w-2xl mx-auto">

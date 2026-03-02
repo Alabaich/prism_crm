@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header'; // Ensure you have this header component
+import { useAuth } from '../../contexts/AuthContext';
+import Header from '../../components/Header'; // Ensure you have this header component
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();

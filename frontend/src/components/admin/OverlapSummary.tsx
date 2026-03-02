@@ -2,7 +2,7 @@ import React from "react";
 import { PieChart as PieIcon } from "lucide-react";
 
 export const OverlapSummary: React.FC<{ overlapStats: any[] }> = ({ overlapStats }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-12">
+  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
     <div className="flex items-center justify-between mb-6">
       <div>
         <h2 className="text-lg font-bold text-slate-800">Source Overlap Summary</h2>

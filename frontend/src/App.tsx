@@ -3,14 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Import Pages
-import BookingPage from './pages/BookingPage';
-import LoginPage from './pages/LoginPage';
-import AdminPage from './pages/AdminPage';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import BookingPage from './pages/public/BookingPage';
+import LoginPage from './pages/public/LoginPage';
+import AdminPage from './pages/admin/AdminPage';
+import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
 
 // Import Layout & Security Wrappers
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminLayout } from './components/AdminLayout';
+import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 
 const AppContent: React.FC = () => {
   return (
@@ -24,6 +25,8 @@ const AppContent: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         {/* AdminLayout provides the sidebar/header wrapper for admin pages */}
         <Route path="/admin" element={<AdminLayout />}>
+
+          <Route path="booking" element={<AdminBookingsPage />} />
           
           {/* Index route: Automatically loads on '/admin' */}
           <Route index element={<AdminPage />} />
