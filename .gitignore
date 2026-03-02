@@ -72,3 +72,5 @@ IDEs and OS Files
 *.swo
 .DS_Store
 Thumbs.db
+
+pg_data/
