@@ -1,35 +1,63 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
-
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    role = Column(String, default="admin") # E.g., 'super_admin', 'sales_rep'
 
 class Lead(Base):
     __tablename__ = "leads"
-    
+
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Core Prospect Info (This is what we will search against to merge bookings!)
+    prospect_name = Column(String, index=True, nullable=True)
     email = Column(String, index=True, nullable=True)
-    phone = Column(String, index=True, nullable=True)
-    name = Column(String)
-    source = Column(String) # Where did they come from? e.g., 'email_worker', 'webhook'
-    is_converted = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    phone = Column(String, nullable=True)
+    
+    # Source Info
+    source = Column(String, nullable=True)               # e.g., "RentSync", "Website Booking"
+    integration_source = Column(String, nullable=True)   # e.g., "Zumper"
+    
+    # Property Info
+    inquiry_date = Column(DateTime, nullable=True)
+    property_name = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    beds = Column(String, nullable=True)
+    baths = Column(String, nullable=True)
+    
+    # Mapping Columns
+    move_in_date = Column(String, nullable=True)
+    promotion = Column(String, nullable=True)
+    
+    # Status
+    status = Column(String, default="New", index=True)
+    
+    # Debugging Columns
+    debug_1 = Column(Text, nullable=True)
+    debug_2 = Column(Text, nullable=True)
+
+    # --- RELATIONSHIPS ---
+    # One Lead can have multiple Bookings. This links the Lead to the Booking table.
+    bookings = relationship("Booking", back_populates="lead")
+
 
 class Booking(Base):
     __tablename__ = "bookings"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True) # Links back to the Lead!
-    tour_name = Column(String)
-    status = Column(String, default="pending") # e.g., 'pending', 'confirmed', 'cancelled'
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    # This creates a magic relationship so you can easily access booking.lead.name later
-    lead = relationship("Lead")
+    # --- FOREIGN KEY ---
+    # This specifically links this booking to a Lead ID in the leads table
+    lead_id = Column(Integer, ForeignKey("leads.id")) 
+    
+    # Tour Details
+    building = Column(String, index=True)
+    tour_date = Column(String, index=True) # e.g., '2026-03-05'
+    tour_time = Column(String)             # e.g., '14:00'
+    
+    status = Column(String, default="Scheduled") # Can be Scheduled, Cancelled, Completed
+
+    # --- RELATIONSHIPS ---
+    # This allows us to easily access the Lead info from the Booking object
+    lead = relationship("Lead", back_populates="bookings")
