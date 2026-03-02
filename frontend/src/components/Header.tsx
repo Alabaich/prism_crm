@@ -1,27 +1,29 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
 
 interface HeaderProps {
   currentView: 'booking' | 'login' | 'admin';
-  onHomeClick: () => void;
-  onLoginClick: () => void;
-  onAdminDashboardClick: () => void;
-  onLogoutClick: () => void;
-  username?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  currentView,
-  onHomeClick,
-  onLoginClick,
-  onAdminDashboardClick,
-  onLogoutClick,
-  username
-}) => {
+const Header: React.FC<HeaderProps> = ({ currentView }) => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleHomeClick = () => navigate('/');
+  const handleLoginClick = () => navigate('/login');
+  const handleAdminDashboardClick = () => navigate('/admin');
+  
+  const handleLogoutClick = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <nav className="flex w-full items-center justify-between border-b border-slate-200 bg-white px-8 py-4 shadow-sm">
       {/* Universal Logo linking back to homepage */}
-      <button onClick={onHomeClick} className="flex items-center hover:opacity-80 transition-opacity">
+      <button onClick={handleHomeClick} className="flex items-center hover:opacity-80 transition-opacity">
         <img 
           src={logo} 
           alt="Prism Property Management" 
@@ -33,16 +35,16 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-4">
         {currentView === 'booking' && (
           <button
-            onClick={username ? onAdminDashboardClick : onLoginClick}
+            onClick={user ? handleAdminDashboardClick : handleLoginClick}
             className="!bg-slate-800 !text-white rounded-lg px-6 py-2.5 text-sm font-semibold transition-colors hover:!bg-slate-700 shadow-md"
           >
-            {username ? 'Admin Dashboard' : 'Admin Login'}
+            {user ? 'Admin Dashboard' : 'Admin Login'}
           </button>
         )}
         
         {currentView === 'login' && (
           <button
-            onClick={onHomeClick}
+            onClick={handleHomeClick}
             className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
           >
             &larr; Back to Booking
@@ -52,10 +54,10 @@ const Header: React.FC<HeaderProps> = ({
         {currentView === 'admin' && (
           <>
             <span className="text-sm font-medium text-slate-600">
-              Welcome, {username}
+              Welcome, {user?.username}
             </span>
             <button
-              onClick={onLogoutClick}
+              onClick={handleLogoutClick}
               className="rounded-lg !bg-slate-100 !text-slate-700 px-4 py-2 text-sm font-medium transition-colors hover:!bg-slate-200 border border-slate-200"
             >
               Log Out

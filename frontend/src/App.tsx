@@ -1,62 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Header from './components/Header';
-import BookingView from './views/BookingView';
-import LoginView from './views/LoginView';
-import AdminView from './views/AdminView';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 
-type ViewRoute = 'booking' | 'login' | 'admin';
+// Import Pages
+import BookingPage from './pages/BookingPage';
+import LoginPage from './pages/LoginPage';
+import AdminPage from './pages/AdminPage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+
+// Import Layout & Security Wrappers
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AdminLayout } from './components/AdminLayout';
 
 const AppContent: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [view, setView] = useState<ViewRoute>('booking');
-
-  // Automatically route to admin dashboard upon successful login
-  useEffect(() => {
-    if (user && view === 'login') {
-      setView('admin');
-    }
-  }, [user, view]);
-
-  // Route back to login if session expires or user logs out
-  useEffect(() => {
-    if (!user && view === 'admin') {
-      setView('login');
-    }
-  }, [user, view]);
-
-  const handleLogout = () => {
-    logout();
-    setView('booking');
-  };
-
   return (
-    <div className="min-h-screen w-full bg-slate-50 flex flex-col">
-      <Header 
-        currentView={view}
-        onHomeClick={() => setView('booking')}
-        onLoginClick={() => setView('login')}
-        onAdminDashboardClick={() => setView('admin')}
-        onLogoutClick={handleLogout}
-        username={user?.username}
-      />
-      <div className="flex-1 w-full flex flex-col">
-        {view === 'admin' && user ? (
-          <AdminView />
-        ) : view === 'login' ? (
-          <LoginView />
-        ) : (
-          <BookingView />
-        )}
-      </div>
-    </div>
+    <Routes>
+      {/* === PUBLIC ROUTES === */}
+      <Route path="/" element={<BookingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* === PROTECTED ADMIN ROUTES === */}
+      {/* Anything wrapped inside <ProtectedRoute> requires an active session */}
+      <Route element={<ProtectedRoute />}>
+        {/* AdminLayout provides the sidebar/header wrapper for admin pages */}
+        <Route path="/admin" element={<AdminLayout />}>
+          
+          {/* Index route: Automatically loads on '/admin' */}
+          <Route index element={<AdminPage />} />
+          
+          {/* Automatically loads on '/admin/analytics' */}
+          <Route path="analytics" element={<AnalyticsDashboard />} />
+          
+        </Route>
+      </Route>
+
+      {/* Fallback route - catches unknown URLs and safely redirects home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
     </AuthProvider>
   );
 };

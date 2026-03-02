@@ -1,0 +1,137 @@
+import { useState, useMemo, useEffect } from "react";
+import axios from "axios";
+import type { Lead, DateRange } from "../types";
+
+const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
+
+export function useAnalyticsData() {
+  const [dateRange, setDateRange] = useState<DateRange>({
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    end: new Date().toISOString().split("T")[0],
+  });
+
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          start_date: dateRange.start,
+          end_date: dateRange.end,
+          limit: "5000",
+          skip: "0",
+        });
+        const response = await axios.get(`http://localhost:8000/get_leads/?${params.toString()}`);
+        setAllLeads(response.data);
+      } catch (error) {
+        console.error("Failed to fetch analytics data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [dateRange]);
+
+  const analytics = useMemo(() => {
+    const leadsByDate: Record<string, number> = {};
+    const uniqueLeadsBySource: Record<string, Set<string>> = {};
+    const totalLeadsBySource: Record<string, number> = {};
+    const emailToSources: Record<string, string[]> = {};
+    const emailToLeads: Record<string, Lead[]> = {};
+
+    allLeads.forEach((lead) => {
+      const dateLabel = new Date(lead.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      leadsByDate[dateLabel] = (leadsByDate[dateLabel] || 0) + 1;
+
+      const source = lead.source || "Unknown";
+      if (!uniqueLeadsBySource[source]) {
+        uniqueLeadsBySource[source] = new Set();
+        totalLeadsBySource[source] = 0;
+      }
+      if (lead.email) uniqueLeadsBySource[source].add(lead.email);
+      totalLeadsBySource[source]++;
+
+      if (lead.email) {
+        if (!emailToSources[lead.email]) emailToSources[lead.email] = [];
+        if (!emailToSources[lead.email].includes(source)) emailToSources[lead.email].push(source);
+        if (!emailToLeads[lead.email]) emailToLeads[lead.email] = [];
+        emailToLeads[lead.email].push(lead);
+      }
+    });
+
+    const chartData = Object.entries(leadsByDate)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
+
+    let duplicatesCount = 0;
+    const overlapMatrix: Record<string, number> = {};
+
+    Object.values(emailToSources).forEach((sources) => {
+      if (sources.length > 1) {
+        duplicatesCount++;
+        for (let i = 0; i < sources.length; i++) {
+          for (let j = i + 1; j < sources.length; j++) {
+            const pair = [sources[i], sources[j]].sort().join(" & ");
+            overlapMatrix[pair] = (overlapMatrix[pair] || 0) + 1;
+          }
+        }
+      }
+    });
+
+    const overlappingGroups = Object.entries(emailToLeads)
+      .filter(([, leads]) => new Set(leads.map(l => l.source)).size > 1)
+      .map(([email, leads]) => ({ email, leads }));
+
+    const platformStats = Object.keys(uniqueLeadsBySource)
+      .map((source) => ({
+        source,
+        uniqueCount: uniqueLeadsBySource[source].size,
+        totalCount: totalLeadsBySource[source],
+        efficiency: totalLeadsBySource[source] > 0 ? Math.round((uniqueLeadsBySource[source].size / totalLeadsBySource[source]) * 100) : 0,
+      }))
+      .sort((a, b) => b.totalCount - a.totalCount);
+
+    const topSources = platformStats.slice(0, 4);
+    const otherSources = platformStats.slice(4);
+
+    const pieChartData = topSources.map((stat, index) => ({
+      label: stat.source,
+      value: stat.totalCount,
+      color: PIE_COLORS[index % PIE_COLORS.length],
+    }));
+
+    if (otherSources.length > 0) {
+      pieChartData.push({
+        label: "Others",
+        value: otherSources.reduce((sum, item) => sum + item.totalCount, 0),
+        color: "#94a3b8",
+      });
+    }
+
+    const overlapStats = Object.entries(overlapMatrix)
+      .map(([pair, count]) => ({ pair, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      totalLeads: allLeads.length,
+      uniquePeople: Object.keys(emailToSources).length,
+      duplicatesCount,
+      platformStats,
+      overlapStats,
+      chartData,
+      pieChartData,
+      overlappingGroups,
+    };
+  }, [allLeads]);
+
+  const growthPercentage = useMemo(() => {
+    const previousTotal: number = 150; 
+    if (previousTotal === 0) return 100;
+    return Math.round(((analytics.totalLeads - previousTotal) / previousTotal) * 100);
+  }, [analytics.totalLeads]);
+
+  return { dateRange, setDateRange, loading, analytics, growthPercentage };
+}
