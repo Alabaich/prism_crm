@@ -37,6 +37,8 @@ services:
       - .env
     volumes:
       - ./backend:/code
+    environment:                  
+      - TZ=America/Toronto
       
 
   worker:
@@ -52,6 +54,8 @@ services:
       - .env
     volumes:
       - ./backend:/code
+    environment:                  
+      - TZ=America/Toronto
 
   frontend:
     build: ./frontend
@@ -64,10 +68,12 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - VITE_API_URL=http://localhost:8000
+      - TZ=America/Toronto
     env_file:
       - .env
     stdin_open: true
     tty: true
 
+      
 volumes:
   frontend_node_modules:
