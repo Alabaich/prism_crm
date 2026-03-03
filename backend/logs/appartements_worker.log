@@ -1,0 +1,194 @@
+2026-03-03 14:43:00,572 - MasterWorker - INFO - 🚀 Prism CRM Worker Orchestrator Starting Up...
+2026-03-03 14:43:00,576 - MasterWorker - INFO - --------------------------------------------------
+2026-03-03 14:43:00,576 - MasterWorker - INFO - 🔄 Starting Master Scrape Cycle...
+2026-03-03 14:43:00,577 - MasterWorker - INFO - ▶️ Triggering Appartements Worker
+2026-03-03 14:43:00,577 - AppartementsWorker - INFO - 🚀 Starting Appartements Mailbox Scan Job...
+2026-03-03 14:43:00,599 - AppartementsWorker - INFO - 📅 Scanning emails since 2026-02-01T14:43:00Z...
+2026-03-03 14:43:00,753 - AppartementsWorker - WARNING - ⚠️ Access token expired. Attempting to refresh...
+2026-03-03 14:43:01,374 - AppartementsWorker - INFO - 💾 Token refreshed and saved.
+2026-03-03 14:43:05,667 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-03-02T12:18:53Z)
+2026-03-03 14:43:05,968 - AppartementsWorker - INFO - 💾 SAVED TO DB: Johnathan Collins (475 George Street North) at 2026-03-02 12:18:53
+2026-03-03 14:43:05,971 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-03-02T10:32:12Z)
+2026-03-03 14:43:05,978 - AppartementsWorker - INFO - 💾 SAVED TO DB: Gladys Lasconia (80 Bond Street East) at 2026-03-02 10:32:12
+2026-03-03 14:43:05,987 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-03-01T22:42:47Z)
+2026-03-03 14:43:05,994 - AppartementsWorker - INFO - 💾 SAVED TO DB: Michelle Marquis (475 George Street North) at 2026-03-01 22:42:47
+2026-03-03 14:43:06,002 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-03-01T21:21:21Z)
+2026-03-03 14:43:06,011 - AppartementsWorker - INFO - 💾 SAVED TO DB: Christine&nbsp;McCormack (Unknown Property) at 2026-03-01 21:21:21
+2026-03-03 14:43:10,546 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-28T03:32:35Z)
+2026-03-03 14:43:10,572 - AppartementsWorker - INFO - 💾 SAVED TO DB: Priscilla Southwind (80 Bond Street East) at 2026-02-28 03:32:35
+2026-03-03 14:43:15,194 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-27T01:50:30Z)
+2026-03-03 14:43:15,222 - AppartementsWorker - INFO - 💾 SAVED TO DB: Oluranti Osinuga (100 Bond Street East) at 2026-02-27 01:50:30
+2026-03-03 14:43:15,229 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-27T01:50:21Z)
+2026-03-03 14:43:15,236 - AppartementsWorker - INFO - 💾 SAVED TO DB: Oluranti Osinuga (100 Bond Street East) at 2026-02-27 01:50:21
+2026-03-03 14:43:17,945 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-27T01:48:25Z)
+2026-03-03 14:43:17,955 - AppartementsWorker - INFO - 💾 SAVED TO DB: Oluranti&nbsp;Osinuga (Unknown Property) at 2026-02-27 01:48:25
+2026-03-03 14:43:17,963 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-27T01:46:32Z)
+2026-03-03 14:43:17,970 - AppartementsWorker - INFO - 💾 SAVED TO DB: Oluranti Osinuga (80 Bond Street East) at 2026-02-27 01:46:32
+2026-03-03 14:43:17,980 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-27T01:46:28Z)
+2026-03-03 14:43:17,987 - AppartementsWorker - INFO - 💾 SAVED TO DB: Oluranti Osinuga (80 Bond Street East) at 2026-02-27 01:46:28
+2026-03-03 14:43:20,122 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-26T19:36:23Z)
+2026-03-03 14:43:20,149 - AppartementsWorker - INFO - 💾 SAVED TO DB: Anita&nbsp;Bornilla (Unknown Property) at 2026-02-26 19:36:23
+2026-03-03 14:43:22,323 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-26T10:08:13Z)
+2026-03-03 14:43:22,336 - AppartementsWorker - INFO - 💾 SAVED TO DB: K Tavernier (475 George Street North) at 2026-02-26 10:08:13
+2026-03-03 14:43:22,345 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-26T00:16:43Z)
+2026-03-03 14:43:22,353 - AppartementsWorker - INFO - 💾 SAVED TO DB: carter couling (475 George Street North) at 2026-02-26 00:16:43
+2026-03-03 14:43:22,364 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-25T21:22:55Z)
+2026-03-03 14:43:22,372 - AppartementsWorker - INFO - 💾 SAVED TO DB: Carter couling (475 George Street North) at 2026-02-25 21:22:55
+2026-03-03 14:43:22,381 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-25T19:31:20Z)
+2026-03-03 14:43:22,387 - AppartementsWorker - INFO - 💾 SAVED TO DB: Sandra Serrano (80 Bond Street East) at 2026-02-25 19:31:20
+2026-03-03 14:43:22,396 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-25T19:27:25Z)
+2026-03-03 14:43:22,404 - AppartementsWorker - INFO - 💾 SAVED TO DB: Sandra&nbsp;Serrano (Unknown Property) at 2026-02-25 19:27:25
+2026-03-03 14:43:24,468 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-25T18:00:40Z)
+2026-03-03 14:43:24,477 - AppartementsWorker - INFO - 💾 SAVED TO DB: Hilda Chan (475 George Street North) at 2026-02-25 18:00:40
+2026-03-03 14:43:26,920 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-25T03:12:34Z)
+2026-03-03 14:43:26,930 - AppartementsWorker - INFO - 💾 SAVED TO DB: Shakeria&nbsp;Mcleod (Unknown Property) at 2026-02-25 03:12:34
+2026-03-03 14:43:26,940 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-25T02:56:38Z)
+2026-03-03 14:43:26,966 - AppartementsWorker - INFO - 💾 SAVED TO DB: RICHARD ELEN (100 Bond Street East) at 2026-02-25 02:56:38
+2026-03-03 14:43:26,971 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-24T23:49:11Z)
+2026-03-03 14:43:26,998 - AppartementsWorker - INFO - 💾 SAVED TO DB: SHAWN HUMPHREY (100 Bond Street East) at 2026-02-24 23:49:11
+2026-03-03 14:43:35,923 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-23T21:51:26Z)
+2026-03-03 14:43:35,951 - AppartementsWorker - INFO - 💾 SAVED TO DB: Samantha&nbsp;Salonga (Unknown Property) at 2026-02-23 21:51:26
+2026-03-03 14:43:35,960 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-23T20:28:31Z)
+2026-03-03 14:43:35,968 - AppartementsWorker - INFO - 💾 SAVED TO DB: Theresa Hrncie (80 Bond Street East) at 2026-02-23 20:28:31
+2026-03-03 14:43:35,980 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-23T18:52:41Z)
+2026-03-03 14:43:35,988 - AppartementsWorker - INFO - 💾 SAVED TO DB: Wasiq Khaliq (80 Bond Street East) at 2026-02-23 18:52:41
+2026-03-03 14:43:36,001 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-23T17:46:14Z)
+2026-03-03 14:43:36,008 - AppartementsWorker - INFO - 💾 SAVED TO DB: Dorothi Belliard (80 Bond Street East) at 2026-02-23 17:46:14
+2026-03-03 14:43:36,017 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-23T17:07:13Z)
+2026-03-03 14:43:36,024 - AppartementsWorker - INFO - 💾 SAVED TO DB: Theresa Hrncie (475 George Street North) at 2026-02-23 17:07:13
+2026-03-03 14:43:37,988 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-23T00:12:31Z)
+2026-03-03 14:43:37,998 - AppartementsWorker - INFO - 💾 SAVED TO DB: Madison Kooting (475 George Street North) at 2026-02-23 00:12:31
+2026-03-03 14:43:38,008 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-22T14:50:31Z)
+2026-03-03 14:43:38,015 - AppartementsWorker - INFO - 💾 SAVED TO DB: Louise Wilson (475 George Street North) at 2026-02-22 14:50:31
+2026-03-03 14:43:38,032 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-22T14:08:17Z)
+2026-03-03 14:43:38,042 - AppartementsWorker - INFO - 💾 SAVED TO DB: Rolly Seguin (80 Bond Street East) at 2026-02-22 14:08:17
+2026-03-03 14:43:38,054 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-22T04:16:11Z)
+2026-03-03 14:43:38,062 - AppartementsWorker - INFO - 💾 SAVED TO DB: Isabella Rego (475 George Street North) at 2026-02-22 04:16:11
+2026-03-03 14:43:40,003 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-21T15:12:31Z)
+2026-03-03 14:43:40,010 - AppartementsWorker - INFO - 💾 SAVED TO DB: Phoenix Bingham (475 George Street North) at 2026-02-21 15:12:31
+2026-03-03 14:43:42,094 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-20T22:58:26Z)
+2026-03-03 14:43:42,107 - AppartementsWorker - INFO - 💾 SAVED TO DB: Ryan Brinn (475 George Street North) at 2026-02-20 22:58:26
+2026-03-03 14:43:44,248 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-20T15:02:26Z)
+2026-03-03 14:43:44,269 - AppartementsWorker - INFO - 💾 SAVED TO DB: Emily Mudge (475 George Street North) at 2026-02-20 15:02:26
+2026-03-03 14:43:46,719 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-20T02:16:50Z)
+2026-03-03 14:43:46,728 - AppartementsWorker - INFO - 💾 SAVED TO DB: Melissa Pigden (100 Bond Street East) at 2026-02-20 02:16:50
+2026-03-03 14:43:46,737 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-20T02:10:40Z)
+2026-03-03 14:43:46,744 - AppartementsWorker - INFO - 💾 SAVED TO DB: Melissa Pigden (80 Bond Street East) at 2026-02-20 02:10:40
+2026-03-03 14:43:55,887 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-19T15:58:19Z)
+2026-03-03 14:43:55,898 - AppartementsWorker - INFO - 💾 SAVED TO DB: Phoenix Bingham (475 George Street North) at 2026-02-19 15:58:19
+2026-03-03 14:44:06,455 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-18T15:04:35Z)
+2026-03-03 14:44:06,481 - AppartementsWorker - INFO - 💾 SAVED TO DB: DivineFavour Enuezie (475 George Street North) at 2026-02-18 15:04:35
+2026-03-03 14:44:06,488 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-18T09:10:20Z)
+2026-03-03 14:44:06,515 - AppartementsWorker - INFO - 💾 SAVED TO DB: Logan Doyle (80 Bond Street East) at 2026-02-18 09:10:20
+2026-03-03 14:44:09,011 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-17T19:28:20Z)
+2026-03-03 14:44:09,017 - AppartementsWorker - INFO - 💾 SAVED TO DB: Dave Watson (100 Bond Street East) at 2026-02-17 19:28:20
+2026-03-03 14:44:09,024 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-17T08:04:17Z)
+2026-03-03 14:44:09,030 - AppartementsWorker - INFO - 💾 SAVED TO DB: hassan haseeb (80 Bond Street East) at 2026-02-17 08:04:17
+2026-03-03 14:44:09,041 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-17T07:58:14Z)
+2026-03-03 14:44:09,047 - AppartementsWorker - INFO - 💾 SAVED TO DB: hassan haseeb (100 Bond Street East) at 2026-02-17 07:58:14
+2026-03-03 14:44:09,056 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-17T06:21:23Z)
+2026-03-03 14:44:09,064 - AppartementsWorker - INFO - 💾 SAVED TO DB: Afia&nbsp;Zaheen (Unknown Property) at 2026-02-17 06:21:23
+2026-03-03 14:44:09,071 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-16T01:48:35Z)
+2026-03-03 14:44:09,078 - AppartementsWorker - INFO - 💾 SAVED TO DB: Chantal SULAMAN (80 Bond Street East) at 2026-02-16 01:48:35
+2026-03-03 14:44:12,311 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-13T23:56:31Z)
+2026-03-03 14:44:12,318 - AppartementsWorker - INFO - 💾 SAVED TO DB: Shivesh Boodoo (475 George Street North) at 2026-02-13 23:56:31
+2026-03-03 14:44:15,903 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-13T17:02:31Z)
+2026-03-03 14:44:15,910 - AppartementsWorker - INFO - 💾 SAVED TO DB: DivineFavour Enuezie (475 George Street North) at 2026-02-13 17:02:31
+2026-03-03 14:44:20,992 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-12T16:04:15Z)
+2026-03-03 14:44:20,998 - AppartementsWorker - INFO - 💾 SAVED TO DB: Renee Johnson (100 Bond Street East) at 2026-02-12 16:04:15
+2026-03-03 14:44:32,532 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-09T21:47:08Z)
+2026-03-03 14:44:32,544 - AppartementsWorker - INFO - 💾 SAVED TO DB: Maxim Tandon (475 George Street North) at 2026-02-09 21:47:08
+2026-03-03 14:44:36,672 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-09T13:47:31Z)
+2026-03-03 14:44:36,698 - AppartementsWorker - INFO - 💾 SAVED TO DB: Maureen Edwards (100 Bond Street East) at 2026-02-09 13:47:31
+2026-03-03 14:44:36,705 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-08T14:18:28Z)
+2026-03-03 14:44:36,712 - AppartementsWorker - INFO - 💾 SAVED TO DB: Jarnale Lennkx (80 Bond Street East) at 2026-02-08 14:18:28
+2026-03-03 14:44:36,721 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-08T05:22:27Z)
+2026-03-03 14:44:36,726 - AppartementsWorker - INFO - 💾 SAVED TO DB: Csarinnah Pagala (100 Bond Street East) at 2026-02-08 05:22:27
+2026-03-03 14:44:36,734 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-07T21:56:21Z)
+2026-03-03 14:44:36,739 - AppartementsWorker - INFO - 💾 SAVED TO DB: Jo Clemits (80 Bond Street East) at 2026-02-07 21:56:21
+2026-03-03 14:44:38,880 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-07T04:28:34Z)
+2026-03-03 14:44:38,886 - AppartementsWorker - INFO - 💾 SAVED TO DB: Tyonquay Mahomed (80 Bond Street East) at 2026-02-07 04:28:34
+2026-03-03 14:44:38,893 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-06T23:18:34Z)
+2026-03-03 14:44:38,901 - AppartementsWorker - INFO - 💾 SAVED TO DB: Serenity palmer (100 Bond Street East) at 2026-02-06 23:18:34
+2026-03-03 14:44:38,914 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-06T23:16:37Z)
+2026-03-03 14:44:38,922 - AppartementsWorker - INFO - 💾 SAVED TO DB: Serenity palmer (80 Bond Street East) at 2026-02-06 23:16:37
+2026-03-03 14:44:38,933 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-06T22:08:32Z)
+2026-03-03 14:44:38,942 - AppartementsWorker - INFO - 💾 SAVED TO DB: Shaquikna Jones (100 Bond Street East) at 2026-02-06 22:08:32
+2026-03-03 14:44:40,958 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-06T18:42:37Z)
+2026-03-03 14:44:40,964 - AppartementsWorker - INFO - 💾 SAVED TO DB: Zaa Nkweta (475 George Street North) at 2026-02-06 18:42:37
+2026-03-03 14:44:43,147 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-06T03:40:43Z)
+2026-03-03 14:44:43,154 - AppartementsWorker - INFO - 💾 SAVED TO DB: Owen Lane (475 George Street North) at 2026-02-06 03:40:43
+2026-03-03 14:44:43,159 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-05T22:46:12Z)
+2026-03-03 14:44:43,165 - AppartementsWorker - INFO - 💾 SAVED TO DB: michael walker (475 George Street North) at 2026-02-05 22:46:12
+2026-03-03 14:44:45,268 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-05T15:06:26Z)
+2026-03-03 14:44:45,276 - AppartementsWorker - INFO - 💾 SAVED TO DB: Audrey&nbsp;Akaolisa (Unknown Property) at 2026-02-05 15:06:26
+2026-03-03 14:44:45,286 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-05T15:06:25Z)
+2026-03-03 14:44:45,294 - AppartementsWorker - INFO - 💾 SAVED TO DB: Audrey&nbsp;Akaolisa (Unknown Property) at 2026-02-05 15:06:25
+2026-03-03 14:44:47,588 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-04T22:30:25Z)
+2026-03-03 14:44:47,600 - AppartementsWorker - INFO - 💾 SAVED TO DB: Audrey&nbsp;Akaolisa (Unknown Property) at 2026-02-04 22:30:25
+2026-03-03 14:44:47,606 - AppartementsWorker - INFO - 🔎 Found new lead email: tour requested from the apartments.com network (Received: 2026-02-04T21:21:27Z)
+2026-03-03 14:44:47,614 - AppartementsWorker - INFO - 💾 SAVED TO DB: Μehrsa&nbsp;Rakhshani (Unknown Property) at 2026-02-04 21:21:27
+2026-03-03 14:44:52,083 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-04T01:22:50Z)
+2026-03-03 14:44:52,090 - AppartementsWorker - INFO - 💾 SAVED TO DB: Jessica Stolove (80 Bond Street East) at 2026-02-04 01:22:50
+2026-03-03 14:44:52,103 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-03T23:24:41Z)
+2026-03-03 14:44:52,130 - AppartementsWorker - INFO - 💾 SAVED TO DB: Hannah Walker (100 Bond Street East) at 2026-02-03 23:24:41
+2026-03-03 14:44:54,799 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-03T20:20:41Z)
+2026-03-03 14:44:54,810 - AppartementsWorker - INFO - 💾 SAVED TO DB: Tori Iozzo (475 George Street North) at 2026-02-03 20:20:41
+2026-03-03 14:44:54,828 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-03T20:14:53Z)
+2026-03-03 14:44:54,837 - AppartementsWorker - INFO - 💾 SAVED TO DB: Tori Iozzo (475 George Street North) at 2026-02-03 20:14:53
+2026-03-03 14:44:54,856 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 80 bond street east (Received: 2026-02-03T18:11:39Z)
+2026-03-03 14:44:54,863 - AppartementsWorker - INFO - 💾 SAVED TO DB: Joanne Jeanson (80 Bond Street East) at 2026-02-03 18:11:39
+2026-03-03 14:45:02,266 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 475 george street north (Received: 2026-02-02T15:28:22Z)
+2026-03-03 14:45:02,272 - AppartementsWorker - INFO - 💾 SAVED TO DB: Jesse Liedtke (475 George Street North) at 2026-02-02 15:28:22
+2026-03-03 14:45:04,982 - AppartementsWorker - INFO - 🔎 Found new lead email: apartments.com network lead for 100 bond street east (Received: 2026-02-01T17:04:11Z)
+2026-03-03 14:45:05,011 - AppartementsWorker - INFO - 💾 SAVED TO DB: Tasnima Kazi (100 Bond Street East) at 2026-02-01 17:04:11
+2026-03-03 14:45:05,020 - AppartementsWorker - INFO - ✅ Page loop finished.
+2026-03-03 14:45:05,021 - AppartementsWorker - INFO - 🏁 Job Finished. Checked 2462 emails. Saved 68 new leads.
+2026-03-03 14:45:10,024 - MasterWorker - INFO - ▶️ Triggering Rhenti Worker
+2026-03-03 14:45:10,024 - RhentiWorker - INFO - 🚀 Starting Rhenti Mailbox Scan (Last 30 Days)...
+2026-03-03 14:45:12,954 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You have new messages from Mikala OBrien from 80 Bond
+2026-03-03 14:45:12,960 - RhentiWorker - INFO - 💾 SAVED TO DB: Mikala OBrien (Unknown Property)
+2026-03-03 14:45:12,964 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:12,971 - RhentiWorker - INFO - 💾 SAVED TO DB: Mary Jo Morrison (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:34,633 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:34,639 - RhentiWorker - INFO - 💾 SAVED TO DB: Oleksandr Tsybulskyi (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:37,186 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:37,217 - RhentiWorker - INFO - 💾 SAVED TO DB: Yijie Zhou (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:45,166 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:45,175 - RhentiWorker - INFO - 💾 SAVED TO DB: Romil Jatania (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:46,854 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:46,861 - RhentiWorker - INFO - 💾 SAVED TO DB: Ikenna Madumere (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:50,377 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:50,385 - RhentiWorker - INFO - 💾 SAVED TO DB: Morgan Fyfe (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:50,392 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: Viewing request received – ACTION REQUIRED - 1 Bed - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:50,398 - RhentiWorker - INFO - 💾 SAVED TO DB: David Frost (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:50,411 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:45:50,416 - RhentiWorker - INFO - 💾 SAVED TO DB: Mark Turla (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:45:58,588 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You have new messages from Tarunpreet Rathore from 80 Bond
+2026-03-03 14:45:58,595 - RhentiWorker - INFO - 💾 SAVED TO DB: Tarunpreet Rathore (Unknown Property)
+2026-03-03 14:45:58,600 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You have new messages from Tarunpreet Rathore from 80 Bond
+2026-03-03 14:45:58,607 - RhentiWorker - INFO - 💾 SAVED TO DB: Tarunpreet Rathore (Unknown Property)
+2026-03-03 14:46:00,279 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: Viewing request received – ACTION REQUIRED - 3 Bed - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:00,289 - RhentiWorker - INFO - 💾 SAVED TO DB: LUCAS OLIVEIRA (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:00,302 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You have new messages from Lucas OLIVEIRA from 80 Bond
+2026-03-03 14:46:00,309 - RhentiWorker - INFO - 💾 SAVED TO DB: Lucas OLIVEIRA (Unknown Property)
+2026-03-03 14:46:02,088 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: Viewing request received – ACTION REQUIRED - 2 Bed - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:02,094 - RhentiWorker - INFO - 💾 SAVED TO DB: Syed Muhit Hasan (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:03,525 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: Offer Received from 80 Bond
+2026-03-03 14:46:03,532 - RhentiWorker - INFO - 💾 SAVED TO DB: Unknown Rhenti Lead (Unknown Property)
+2026-03-03 14:46:07,998 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You have new messages from Savannah McCready Beaudin from 80 Bond
+2026-03-03 14:46:08,010 - RhentiWorker - INFO - 💾 SAVED TO DB: Savannah McCready Beaudin (Unknown Property)
+2026-03-03 14:46:22,544 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:22,573 - RhentiWorker - INFO - 💾 SAVED TO DB: JINOMON CYRIAC (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:25,086 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:25,113 - RhentiWorker - INFO - 💾 SAVED TO DB: josee vaillancourt (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:30,673 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: You received a renter inquiry from 100 Bond
+2026-03-03 14:46:30,680 - RhentiWorker - INFO - 💾 SAVED TO DB: Michel Desjardins (3 Bed - 100 Bond St E, Oshawa, ON L1G 0B7, Canada)
+2026-03-03 14:46:38,604 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: Viewing request received – ACTION REQUIRED - 1 Bed - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:38,610 - RhentiWorker - INFO - 💾 SAVED TO DB: Eddie alexander Moreno londoño (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:38,617 - RhentiWorker - INFO - 🔎 Processing Rhenti Lead: New Lead from Contact Form - 80 Bond St E, Oshawa, ON L1G 0E6, Canada from 80 Bond
+2026-03-03 14:46:38,623 - RhentiWorker - INFO - 💾 SAVED TO DB: Eddie alexander Moreno londoño (80 Bond St E, Oshawa, ON L1G 0E6, Canada)
+2026-03-03 14:46:49,289 - RhentiWorker - INFO - 🏁 Job Finished. Checked 2464 emails. Saved 21 new leads.
+2026-03-03 14:46:49,294 - MasterWorker - INFO - ✅ Master Scrape Cycle Complete.
+2026-03-03 14:46:49,296 - MasterWorker - INFO - --------------------------------------------------
+2026-03-03 14:46:49,297 - MasterWorker - INFO - 💤 Orchestrator sleeping for 1 hour...
