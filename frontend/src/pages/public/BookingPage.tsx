@@ -1,45 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Calendar as CalendarIcon, Clock, MapPin, User, Mail, Phone, CheckCircle2 } from 'lucide-react';
-import { format, addDays, startOfToday, isSunday } from 'date-fns';
-import Header from '../../components/Header'; // Ensure you have this header component from your project
+import React, { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  CheckCircle2,
+} from "lucide-react";
+import { format, addDays, startOfToday, isSunday } from "date-fns";
 
-const BUILDINGS = ['80 Bond St E', '100 Bond St E'];
-const TIME_SLOTS = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
+const Header = ({ currentView }: { currentView?: string }) => (
+  <header className="bg-white border-b border-zinc-200 px-6 py-4">
+    <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="font-bold text-xl tracking-tight text-zinc-900">Prism</div>
+      {currentView && <div className="text-sm font-medium text-zinc-500 capitalize">{currentView}</div>}
+    </div>
+  </header>
+);
+
+const BUILDINGS = ["80 Bond St E", "100 Bond St E"];
+const TIME_SLOTS = [
+  "09:00",
+  "10:00",
+  "11:00",
+  "13:00",
+  "14:00",
+  "15:00",
+];
 
 const BookingPage: React.FC = () => {
-  const today = startOfToday();
+  // 1. FIXED REFERENCES: Use useState for these to prevent any reference-drop loops in Strict Mode
+  const [today] = useState(() => startOfToday());
+  const [currentHour] = useState(() => new Date().getHours());
+  
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     building: BUILDINGS[0],
-    date: format(addDays(today, 1), 'yyyy-MM-dd'),
-    time: '',
-    name: '',
-    email: '',
-    phone: '',
+    date: format(today, "yyyy-MM-dd"),
+    time: "",
+    name: "",
+    email: "",
+    phone: "",
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
+  // 1. Fetch Blocked Dates on Mount 
+  useEffect(() => {
+    const fetchBlockedDates = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/bookings/blocked-dates");
+        if (res.ok) {
+          const data = await res.json();
+          // Ensure data is just an array of strings
+          setBlockedDates(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch blocked dates", err);
+      }
+    };
+    fetchBlockedDates();
+  }, []);
+
+  // 2. Map available dates
+  // We use the array directly for comparison to avoid string .includes() bugs 
+  // (e.g. checking for "2026-03-01" inside "2026-03-010")
+  const availableDates = useMemo(() => {
+    return Array.from({ length: 30 }).map((_, i) => {
+      const date = addDays(today, i);
+      const dateStr = format(date, "yyyy-MM-dd");
+      const isSun = isSunday(date);
+      const isBlocked = blockedDates.some(bd => bd === dateStr);
+      
+      const disabled = isSun || isBlocked;
+      let labelSuffix = "";
+      if (isSun) labelSuffix = " (Sunday Closed)";
+      else if (isBlocked) labelSuffix = " (Unavailable)";
+
+      return {
+        date: dateStr,
+        label: format(date, "EEE, MMM d"),
+        disabled,
+        labelSuffix
+      };
+    });
+  }, [today, blockedDates]);
+
+  // 3. Auto-correct selected date if initial load hits a blocked day
+  useEffect(() => {
+    const currentOption = availableDates.find(d => d.date === formData.date);
+    if (currentOption?.disabled) {
+      const nextAvailable = availableDates.find(d => !d.disabled);
+      if (nextAvailable) {
+        setFormData(prev => ({ ...prev, date: nextAvailable.date, time: "" }));
+      }
+    }
+  }, [availableDates, formData.date]);
+
+  // 4. Fetch taken hourly slots ONLY when Building or Date changes
   useEffect(() => {
     const fetchTakenSlots = async () => {
       if (!formData.building || !formData.date) return;
+      
       setIsLoadingSlots(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`);
-        
+        const res = await fetch(
+          `http://localhost:8000/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`
+        );
+
         if (res.ok) {
           const data = await res.json();
           setTakenSlots(data);
-          // If the currently selected time just became unavailable, clear it
-          if (data.includes(formData.time)) {
-            setFormData(prev => ({ ...prev, time: '' }));
-          }
+
+          // Only clear the time if the specific time they selected is taken or passed
+          setFormData((prev) => {
+            const isToday = prev.date === format(today, "yyyy-MM-dd");
+            const slotHour = prev.time ? parseInt(prev.time.split(":")[0], 10) : null;
+            const isPassedToday = isToday && slotHour !== null && slotHour <= currentHour;
+
+            if (data.includes(prev.time) || isPassedToday) {
+              if (prev.time !== "") {
+                return { ...prev, time: "" };
+              }
+            }
+            return prev;
+          });
         }
       } catch (err) {
-        console.error('Failed to fetch taken slots', err);
+        console.error("Failed to fetch taken slots", err);
         setTakenSlots([]);
       } finally {
         setIsLoadingSlots(false);
@@ -47,31 +141,24 @@ const BookingPage: React.FC = () => {
     };
 
     fetchTakenSlots();
-  }, [formData.building, formData.date, formData.time]);
+  }, [formData.building, formData.date, today, currentHour]); 
 
-  const availableDates = Array.from({ length: 14 }).map((_, i) => {
-    const date = addDays(today, i + 1);
-    return {
-      date: format(date, 'yyyy-MM-dd'),
-      label: format(date, 'EEE, MMM d'),
-      disabled: isSunday(date)
-    };
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/bookings/', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8000/bookings/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           building: formData.building,
@@ -85,16 +172,17 @@ const BookingPage: React.FC = () => {
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.detail || 'Failed to create booking. Please try again.');
+        throw new Error(
+          errData.detail || "Failed to create booking. Please try again."
+        );
       }
 
-      // Success! Move to confirmation step
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('An unexpected error occurred.');
+        setError("An unexpected error occurred.");
       }
     } finally {
       setIsSubmitting(false);
@@ -107,24 +195,33 @@ const BookingPage: React.FC = () => {
       <main className="flex-1 w-full px-4 py-12">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 mb-2">Schedule a Tour</h1>
-            <p className="text-zinc-500">Experience our premium spaces at 80 and 100 Bond St E.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 mb-2">
+              Schedule a Tour
+            </h1>
+            <p className="text-zinc-500">
+              Experience our premium spaces at 80 and 100 Bond St E.
+            </p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
-            {/* Progress Bar */}
             <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
               {[1, 2, 3].map((s) => (
                 <div key={s} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step >= s ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-500'
-                  }`}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      step >= s
+                        ? "bg-zinc-900 text-white"
+                        : "bg-zinc-200 text-zinc-500"
+                    }`}
+                  >
                     {s}
                   </div>
                   {s < 3 && (
-                    <div className={`w-12 sm:w-24 h-1 mx-2 rounded-full ${
-                      step > s ? 'bg-zinc-900' : 'bg-zinc-200'
-                    }`} />
+                    <div
+                      className={`w-12 sm:w-24 h-1 mx-2 rounded-full ${
+                        step > s ? "bg-zinc-900" : "bg-zinc-200"
+                      }`}
+                    />
                   )}
                 </div>
               ))}
@@ -138,45 +235,62 @@ const BookingPage: React.FC = () => {
               )}
 
               {step === 1 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
                   <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-zinc-400" />
                     Select Location & Time
                   </h2>
-                  
+
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-2">Building</label>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        Building
+                      </label>
                       <div className="grid grid-cols-2 gap-4">
-                        {BUILDINGS.map(b => (
+                        {BUILDINGS.map((b) => (
                           <button
                             key={b}
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, building: b }))}
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, building: b, time: "" }))
+                            }
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
-                              formData.building === b 
-                                ? 'border-zinc-900 bg-zinc-50' 
-                                : 'border-zinc-200 hover:border-zinc-300'
+                              formData.building === b
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-200 hover:border-zinc-300"
                             }`}
                           >
                             <div className="font-medium text-zinc-900">{b}</div>
-                            <div className="text-sm text-zinc-500 mt-1">Guided Tour</div>
+                            <div className="text-sm text-zinc-500 mt-1">
+                              Guided Tour
+                            </div>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-2">Date</label>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        Date
+                      </label>
                       <select
                         name="date"
                         value={formData.date}
                         onChange={handleChange}
-                        className="w-full p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow bg-white"
+                        className="w-full p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow bg-white disabled:bg-zinc-50 disabled:text-zinc-500"
                       >
-                        {availableDates.map(d => (
-                          <option key={d.date} value={d.date} disabled={d.disabled}>
-                            {d.label} {d.disabled ? '(Sunday Closed)' : ''}
+                        {availableDates.map((d) => (
+                          <option
+                            key={d.date}
+                            value={d.date}
+                            disabled={d.disabled}
+                            style={d.disabled ? { color: '#94a3b8' } : {}}
+                          >
+                            {d.label}{d.labelSuffix}
                           </option>
                         ))}
                       </select>
@@ -184,23 +298,37 @@ const BookingPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        Time {isLoadingSlots && <span className="text-zinc-400 text-xs ml-2">(Loading availability...)</span>}
+                        Time{" "}
+                        {isLoadingSlots && (
+                          <span className="text-zinc-400 text-xs ml-2">
+                            (Loading availability...)
+                          </span>
+                        )}
                       </label>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {TIME_SLOTS.map(t => {
+                        {TIME_SLOTS.map((t) => {
                           const isTaken = takenSlots.includes(t);
+                          
+                          const isToday = formData.date === format(today, 'yyyy-MM-dd');
+                          const slotHour = parseInt(t.split(':')[0], 10);
+                          const isPassedToday = isToday && slotHour <= currentHour;
+                          
+                          const isDisabled = isTaken || isPassedToday;
+
                           return (
                             <button
                               key={t}
                               type="button"
-                              disabled={isTaken}
-                              onClick={() => setFormData(prev => ({ ...prev, time: t }))}
+                              disabled={isDisabled}
+                              onClick={() =>
+                                setFormData((prev) => ({ ...prev, time: t }))
+                              }
                               className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
-                                isTaken
-                                  ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
+                                isDisabled
+                                  ? "bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed"
                                   : formData.time === t
-                                    ? 'bg-zinc-900 text-white border-zinc-900'
-                                    : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300'
+                                  ? "bg-zinc-900 text-white border-zinc-900"
+                                  : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
                               }`}
                             >
                               {t}
@@ -224,7 +352,11 @@ const BookingPage: React.FC = () => {
               )}
 
               {step === 2 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
                   <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-zinc-400" />
                     Your Details
@@ -232,7 +364,9 @@ const BookingPage: React.FC = () => {
 
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-1">Full Name</label>
+                      <label className="block text-sm font-medium text-zinc-700 mb-1">
+                        Full Name
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <User className="h-5 w-5 text-zinc-400" />
@@ -250,7 +384,9 @@ const BookingPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-1">Email Address</label>
+                      <label className="block text-sm font-medium text-zinc-700 mb-1">
+                        Email Address
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Mail className="h-5 w-5 text-zinc-400" />
@@ -265,11 +401,15 @@ const BookingPage: React.FC = () => {
                           placeholder="jane@example.com"
                         />
                       </div>
-                      <p className="mt-1 text-xs text-zinc-500">We'll send your calendar invitation here.</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        We'll send your calendar invitation here.
+                      </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-1">Phone Number (Optional)</label>
+                      <label className="block text-sm font-medium text-zinc-700 mb-1">
+                        Phone Number (Optional)
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Phone className="h-5 w-5 text-zinc-400" />
@@ -286,11 +426,20 @@ const BookingPage: React.FC = () => {
                     </div>
 
                     <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 mt-6">
-                      <h3 className="text-sm font-medium text-zinc-900 mb-2">Booking Summary</h3>
+                      <h3 className="text-sm font-medium text-zinc-900 mb-2">
+                        Booking Summary
+                      </h3>
                       <div className="text-sm text-zinc-600 space-y-1">
-                        <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {formData.building}</div>
-                        <div className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" /> {format(new Date(formData.date), 'MMMM d, yyyy')}</div>
-                        <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> {formData.time}</div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" /> {formData.building}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4" />{" "}
+                          {format(new Date(formData.date), "MMMM d, yyyy")}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" /> {formData.time}
+                        </div>
                       </div>
                     </div>
 
@@ -304,10 +453,12 @@ const BookingPage: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        disabled={isSubmitting || !formData.name || !formData.email}
+                        disabled={
+                          isSubmitting || !formData.name || !formData.email
+                        }
                         className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
-                        {isSubmitting ? 'Confirming...' : 'Confirm Booking'}
+                        {isSubmitting ? "Confirming..." : "Confirm Booking"}
                       </button>
                     </div>
                   </form>
@@ -315,26 +466,44 @@ const BookingPage: React.FC = () => {
               )}
 
               {step === 3 && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8"
+                >
                   <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h2 className="text-2xl font-bold text-zinc-900 mb-2">Booking Confirmed!</h2>
+                  <h2 className="text-2xl font-bold text-zinc-900 mb-2">
+                    Booking Confirmed!
+                  </h2>
                   <p className="text-zinc-600 mb-8 max-w-md mx-auto">
-                    Thank you, {formData.name}. Your tour at {formData.building} is scheduled for {format(new Date(formData.date), 'MMMM d, yyyy')} at {formData.time}.
+                    Thank you, {formData.name}. Your tour at {formData.building}{" "}
+                    is scheduled for{" "}
+                    {format(new Date(formData.date), "MMMM d, yyyy")} at{" "}
+                    {formData.time}.
                   </p>
                   <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200 mb-8 text-left max-w-sm mx-auto">
                     <p className="text-sm text-zinc-600 mb-4">
-                      We've sent a confirmation email to <strong>{formData.email}</strong> with a calendar invitation attached.
+                      We've sent a confirmation email to{" "}
+                      <strong>{formData.email}</strong> with a calendar
+                      invitation attached.
                     </p>
                     <p className="text-sm text-zinc-500">
-                      Please arrive 5 minutes before your scheduled time. The admin team has also been notified.
+                      Please arrive 5 minutes before your scheduled time. The
+                      admin team has also been notified.
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       setStep(1);
-                      setFormData({ ...formData, time: '', name: '', email: '', phone: '' });
+                      setFormData({
+                        ...formData,
+                        time: "",
+                        name: "",
+                        email: "",
+                        phone: "",
+                      });
                     }}
                     className="text-zinc-900 font-medium hover:underline"
                   >

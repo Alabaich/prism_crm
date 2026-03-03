@@ -61,3 +61,12 @@ class Booking(Base):
     # --- RELATIONSHIPS ---
     # This allows us to easily access the Lead info from the Booking object
     lead = relationship("Lead", back_populates="bookings")
+
+
+# --- NEW TABLE FOR BLOCKING DATES ---
+class BlockedDate(Base):
+    __tablename__ = "blocked_dates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(String, unique=True, index=True) # Format: YYYY-MM-DD
+    reason = Column(String, nullable=True)         # Optional: e.g., "Holiday", "Office Closed"

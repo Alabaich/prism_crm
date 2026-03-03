@@ -21,3 +21,20 @@ export interface User {
   username: string;
   role: string;
 }
+
+export interface Booking {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  building: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+}
+
+export interface BlockedDate {
+  id: number;
+  date: string;
+  reason?: string;
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 // import Header from './Header'; // Assuming you still have your header component
 
 export const AdminLayout: React.FC = () => {
@@ -11,6 +11,7 @@ export const AdminLayout: React.FC = () => {
     { path: '/admin', label: 'Overview' },
     { path: '/admin/booking', label: 'Tours & Bookings' },
     { path: '/admin/analytics', label: 'Analytics' },
+    { path: '/admin/calendar', label: 'Calendar' },
   ];
 
   return (

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import SessionLocal
-from models import Booking, Lead
+from models import Booking, Lead, BlockedDate # <-- IMPORT BlockedDate
 
 router = APIRouter()
 
@@ -23,7 +23,19 @@ class BookingCreate(BaseModel):
     email: str
     phone: str
 
-# --- GET /taken (Checks availability for the frontend) ---
+# --- GET /blocked-dates (Tells the public form which days are unavailable) ---
+@router.get("/blocked-dates")
+def get_public_blocked_dates(db: Session = Depends(get_db)):
+    """
+    Returns a simple list of blocked dates (e.g., ["2026-03-05", "2026-03-10"])
+    so the public frontend can disable them in the dropdown.
+    """
+    # Query only the 'date' column for efficiency
+    dates = db.query(BlockedDate.date).all()
+    # Flatten the result from list of tuples [(date1,), (date2,)] to [date1, date2]
+    return [d[0] for d in dates]
+
+# --- GET /taken (Checks hourly availability for the frontend) ---
 @router.get("/taken")
 def get_taken_slots(building: str, date: str, db: Session = Depends(get_db)):
     """

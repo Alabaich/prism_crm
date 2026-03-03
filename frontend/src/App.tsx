@@ -10,8 +10,9 @@ import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
 
 // Import Layout & Security Wrappers
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { AdminLayout } from './components/AdminLayout';
+import { AdminLayout } from './components/admin/AdminLayout';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import AdminCalendarPage from './pages/admin/AdminCalendarPage';
 
 const AppContent: React.FC = () => {
   return (
@@ -27,6 +28,8 @@ const AppContent: React.FC = () => {
         <Route path="/admin" element={<AdminLayout />}>
 
           <Route path="booking" element={<AdminBookingsPage />} />
+
+          <Route path="calendar" element={<AdminCalendarPage />} />
           
           {/* Index route: Automatically loads on '/admin' */}
           <Route index element={<AdminPage />} />

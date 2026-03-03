@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import SessionLocal
-from models import Booking, Lead
+from models import Booking, Lead, BlockedDate
 
 router = APIRouter()
 
@@ -14,9 +14,13 @@ def get_db():
     finally:
         db.close()
 
-# --- Pydantic Schema ---
+# --- Pydantic Schemas ---
 class StatusUpdate(BaseModel):
     status: str
+
+class BlockedDateCreate(BaseModel):
+    date: str
+    reason: str | None = None
 
 # --- GET / (Reads all bookings for the Admin Dashboard) ---
 @router.get("/")
@@ -67,3 +71,31 @@ def update_booking_status(booking_id: int, payload: StatusUpdate, db: Session = 
     db.commit()
     
     return {"message": f"Booking {booking_id} status updated to {payload.status}"}
+
+# --- NEW BLOCKED DATES ADMIN ENDPOINTS ---
+
+@router.get("/blocked-dates")
+def get_blocked_dates(db: Session = Depends(get_db)):
+    """Fetches all blocked dates for the Admin Calendar."""
+    return db.query(BlockedDate).all()
+
+@router.post("/blocked-dates")
+def block_date(payload: BlockedDateCreate, db: Session = Depends(get_db)):
+    """Blocks a specific date."""
+    existing = db.query(BlockedDate).filter(BlockedDate.date == payload.date).first()
+    if existing:
+        return {"message": "Date is already blocked"}
+    
+    new_blocked = BlockedDate(date=payload.date, reason=payload.reason)
+    db.add(new_blocked)
+    db.commit()
+    return {"status": "success", "message": f"Blocked {payload.date}"}
+
+@router.delete("/blocked-dates/{date}")
+def unblock_date(date: str, db: Session = Depends(get_db)):
+    """Unblocks a specific date."""
+    blocked = db.query(BlockedDate).filter(BlockedDate.date == date).first()
+    if blocked:
+        db.delete(blocked)
+        db.commit()
+    return {"status": "success", "message": f"Unblocked {date}"}
