@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import SessionLocal
 from models import Booking, Lead, BlockedDate
+import logging
+from datetime import datetime, timedelta
+from mailer import send_booking_notification, create_ics_event  # <-- import mailer and ICS generator
 
 router = APIRouter()
+logger = logging.getLogger("admin_bookings")
 
 # --- Database Dependency ---
 def get_db():
@@ -56,19 +60,74 @@ def get_all_bookings(db: Session = Depends(get_db)):
 @router.put("/{booking_id}/status")
 def update_booking_status(booking_id: int, payload: StatusUpdate, db: Session = Depends(get_db)):
     """
-    Updates the status of a specific booking (e.g., 'confirmed' or 'cancelled')
+    Updates the status of a specific booking and sends email notification.
+    For 'confirmed' status, a calendar invitation (.ics) is attached.
     """
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
-    
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
     valid_statuses = ["pending", "confirmed", "cancelled", "Scheduled", "Cancelled"]
     if payload.status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
-        
+    
+    # Store old status to detect change
+    old_status = booking.status
     booking.status = payload.status
     db.commit()
+    
+    # If status actually changed to a final state (confirmed/cancelled), send email
+    if old_status != payload.status and payload.status in ["confirmed", "cancelled"]:
+        # Fetch the associated lead
+        lead = db.query(Lead).filter(Lead.id == booking.lead_id).first()
+        if not lead:
+            logger.error(f"Lead not found for booking {booking_id}")
+            return {"message": f"Booking {booking_id} status updated to {payload.status}"}
+        
+        # Prepare booking info dict
+        booking_info = {
+            "id": booking.id,
+            "name": lead.prospect_name,
+            "email": lead.email,
+            "phone": lead.phone,
+            "building": booking.building,
+            "date": booking.tour_date,
+            "time": booking.tour_time,
+            "status": booking.status
+        }
+        
+        attachment_content = None
+        attachment_name = None
+        
+        # If confirmed, generate ICS attachment
+        if payload.status == "confirmed":
+            try:
+                start_dt = datetime.strptime(f"{booking.tour_date} {booking.tour_time}", "%Y-%m-%d %H:%M")
+                end_dt = start_dt + timedelta(hours=1)  # assume 1-hour tour
+                ics_str = create_ics_event(
+                    summary=f"Tour at {booking.building}",
+                    description=f"Tour with {lead.prospect_name}",
+                    location=booking.building,
+                    start_dt=start_dt,
+                    end_dt=end_dt
+                )
+                attachment_content = ics_str.encode('utf-8')
+                attachment_name = "invite.ics"
+                logger.info(f"ICS generated for booking {booking.id}")
+            except Exception as e:
+                logger.error(f"Failed to generate ICS for booking {booking.id}: {e}")
+        
+        # Send email notification
+        try:
+            send_booking_notification(
+                booking_info,
+                is_update=True,
+                attachment_content=attachment_content,
+                attachment_name=attachment_name
+            )
+            logger.info(f"Status update email sent for booking {booking.id}")
+        except Exception as e:
+            logger.error(f"Failed to send status update email for booking {booking.id}: {e}")
     
     return {"message": f"Booking {booking_id} status updated to {payload.status}"}
 

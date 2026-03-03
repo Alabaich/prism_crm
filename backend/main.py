@@ -1,16 +1,28 @@
+from contextlib import asynccontextmanager  # <-- 1. Import this
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 import models
+from scheduler import start_scheduler  # <-- 2. Import your scheduler from the Canvas
 
 # 1. Import your modular routers 
-# (Note: we dropped the 'app.' prefix because we are directly in the backend folder now)
 from api.endpoints import webhooks, leads, auth, get_leads, public_bookings, admin_bookings
 
 # This automatically creates the database tables in Postgres on startup
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Prism CRM API")
+# --- 3. NEW: Lifespan manager for background tasks ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup ---
+    scheduler = start_scheduler()
+    yield
+    # --- Shutdown ---
+    if scheduler:
+        scheduler.shutdown()
+
+# --- 4. Pass the lifespan to your FastAPI app ---
+app = FastAPI(title="Prism CRM API", lifespan=lifespan)
 
 # Setup CORS so your React frontend (on port 5173) can talk to this API
 app.add_middleware(
