@@ -10,15 +10,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { format, addDays, startOfToday, isSunday } from "date-fns";
+import Header from "../../components/Header";
 
-const Header = ({ currentView }: { currentView?: string }) => (
-  <header className="bg-white border-b border-zinc-200 px-6 py-4">
-    <div className="max-w-7xl mx-auto flex items-center justify-between">
-      <div className="font-bold text-xl tracking-tight text-zinc-900">Prism</div>
-      {currentView && <div className="text-sm font-medium text-zinc-500 capitalize">{currentView}</div>}
-    </div>
-  </header>
-);
 
 const BUILDINGS = ["80 Bond St E", "100 Bond St E"];
 const TIME_SLOTS = [
