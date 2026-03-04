@@ -38,7 +38,7 @@ const AdminPage: React.FC = () => {
   const fetchBookings = async () => {
     try {
       // Fetching from the new separated admin endpoint
-      const res = await fetch('http://localhost:8000/admin/bookings/');
+      const res = await fetch('/admin/bookings/');
       if (!res.ok) throw new Error('Failed to fetch bookings');
       const data = await res.json();
       setBookings(data);
@@ -53,7 +53,7 @@ const AdminPage: React.FC = () => {
     setUpdating(id);
     try {
       // Updating status via the admin endpoint
-      const res = await fetch(`http://localhost:8000/admin/bookings/${id}/status`, {
+      const res = await fetch(`/admin/bookings/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),

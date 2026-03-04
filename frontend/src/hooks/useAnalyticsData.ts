@@ -27,8 +27,8 @@ export function useAnalyticsData() {
 
         // Fetch both Leads and Bookings in parallel
         const [leadsRes, bookingsRes] = await Promise.all([
-          axios.get(`http://localhost:8000/get_leads/?${params.toString()}`),
-          axios.get(`http://localhost:8000/admin/bookings/`) 
+          axios.get(`/get_leads/?${params.toString()}`),
+          axios.get(`/admin/bookings/`) 
         ]);
 
         setAllLeads(leadsRes.data);

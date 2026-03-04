@@ -25,9 +25,6 @@ export const TourConversionChart: React.FC<TourConversionChartProps> = ({ data }
           <h2 className="text-lg font-bold text-slate-800">Tour Conversion by Source</h2>
           <p className="text-sm text-slate-500 mt-1">Percentage of leads that successfully booked a tour</p>
         </div>
-        <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-          <Percent className="w-5 h-5" />
-        </div>
       </div>
       
       {data.length === 0 ? (

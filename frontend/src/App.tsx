@@ -15,6 +15,8 @@ import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import AdminCalendarPage from './pages/admin/AdminCalendarPage';
 
 const AppContent: React.FC = () => {
+
+
   return (
     <Routes>
       {/* === PUBLIC ROUTES === */}

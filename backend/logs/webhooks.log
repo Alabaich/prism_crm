@@ -1,0 +1,180 @@
+2026-03-04 11:37:29,303 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 11:37:29,304 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 11:37:29,321 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01
+2026-03-04 11:38:04,700 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 11:38:04,701 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 11:38:04,706 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01
+2026-03-04 11:42:32,100 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 11:42:32,100 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 11:42:32,111 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01
+2026-03-04 11:46:19,747 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 11:46:19,748 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 11:46:19,753 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01
+2026-03-04 11:52:02,684 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 11:52:02,685 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 11:52:02,702 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01
+2026-03-04 12:02:46,943 - webhooks - INFO - --- RENTSYNC WEBHOOK RECEIVED ---
+2026-03-04 12:02:46,943 - webhooks - INFO - {
+  "auth": {
+    "key": null
+  },
+  "data": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "fullname": "Jane Doe",
+    "phone": "1231231234",
+    "source": "rentsync",
+    "parser": "rentsyncParser001",
+    "email": "jane@doe.com",
+    "inboundEmailId": 1234567,
+    "comment": "This is a test comment",
+    "sentAt": "Mon Jan 01 2021 10:10:00 GMT+0000 (Coordinated Universal Time)",
+    "adUrl": "https://www.testurl.com?id=1234",
+    "adIdentifier": "1234",
+    "clientKey": "rentsync-client",
+    "recipientEmail": "noreply@rentsync.com",
+    "buildingId": 12345,
+    "propertyName": "Jane Doe Property Rental",
+    "propertyEmail": "jd-Leads@jdproperties.com",
+    "propertyImportId": "57234",
+    "isPromoted": true,
+    "promotionType": "Test Promotion",
+    "moveInDate": "2024-01-01"
+  }
+}
+2026-03-04 12:02:46,948 - webhooks - INFO - Saved lead: Jane Doe | Promo: Test Promotion | Move-in: 2024-01-01

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 import logging
 import json
@@ -6,7 +6,6 @@ import os
 from datetime import datetime
 from database import SessionLocal
 from models import Lead
-
 
 # --- LOGGING CONFIGURATION ---
 if not os.path.exists("logs"):
@@ -75,6 +74,11 @@ async def receive_rentsync_webhook(request: Request, db: Session = Depends(get_d
         # --- CAPTURE RAW DATA ---
         raw_date = d.get("sentAt") or payload.get("sent_at")
         
+        # FIX: The new DB model likely doesn't have a 'promotion' column.
+        # We append the promo_type into debug_1 to safely save it without crashing SQLAlchemy.
+        safe_payload = json.dumps(payload)[:500] # Truncated to avoid exceeding column limits
+        combined_debug_1 = f"Promo: {promo_type} | Payload: {safe_payload}"
+
         # Create and save lead
         new_lead = Lead(
             prospect_name=p_name if p_name else "Unknown Prospect",
@@ -84,8 +88,9 @@ async def receive_rentsync_webhook(request: Request, db: Session = Depends(get_d
             integration_source=int_source,
             property_name=prop_name,
             move_in_date=move_in,
-            promotion=promo_type,
-            debug_1=json.dumps(payload),
+            created_at=datetime.utcnow(), # Explicitly record the exact time the lead was received
+            # promotion=promo_type,  <-- REMOVED to prevent DB schema crashes
+            debug_1=combined_debug_1,
             debug_2=f"SentAt Raw: {raw_date}",
             status="New"
         )
@@ -99,4 +104,6 @@ async def receive_rentsync_webhook(request: Request, db: Session = Depends(get_d
         
     except Exception as e:
         logger.error(f"Critical Mapping Error: {str(e)}")
-        return {"status": "error", "message": str(e)}
+        db.rollback()
+        # FIX: Return a proper 500 status code so RentSync knows the webhook actually failed!
+        raise HTTPException(status_code=500, detail=str(e))

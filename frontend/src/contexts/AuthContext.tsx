@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // NOTE: If your FastAPI router is mounted with a prefix (like /api), 
       // change this URL to http://localhost:8000/api/login
-      const response = await fetch('http://localhost:8000/auth/login', {
+      const response = await fetch('/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

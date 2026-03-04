@@ -30,8 +30,8 @@ const AdminCalendarPage: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const [bookingsRes, blockedRes] = await Promise.all([
-        fetch('http://localhost:8000/admin/bookings/'),
-        fetch('http://localhost:8000/admin/bookings/blocked-dates')
+        fetch('/admin/bookings/'),
+        fetch('/admin/bookings/blocked-dates')
       ]);
 
       if (bookingsRes.ok) setBookings(await bookingsRes.json());
@@ -54,7 +54,7 @@ const AdminCalendarPage: React.FC = () => {
     
     try {
       if (shouldBlock) {
-        const res = await fetch('http://localhost:8000/admin/bookings/blocked-dates', {
+        const res = await fetch('/admin/bookings/blocked-dates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ date: dateStr, reason: 'Admin blocked via calendar' })
@@ -64,7 +64,7 @@ const AdminCalendarPage: React.FC = () => {
           setBlockedDates(prev => [...prev, { id: Date.now(), date: dateStr }]);
         }
       } else {
-        const res = await fetch(`http://localhost:8000/admin/bookings/blocked-dates/${dateStr}`, {
+        const res = await fetch(`/admin/bookings/blocked-dates/${dateStr}`, {
           method: 'DELETE'
         });
         if (res.ok) {

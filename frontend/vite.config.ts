@@ -7,4 +7,13 @@ export default defineConfig({
     react(),
     tailwindcss(), // <-- Add this plugin
   ],
+  server: {
+    host: true, // You probably already have this for Docker
+    port: 5173,
+    // Add this allowedHosts array:
+    allowedHosts: [
+      'prismpm.cloud',
+      'www.prismpm.cloud'
+    ]
+  }
 })

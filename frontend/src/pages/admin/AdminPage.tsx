@@ -235,7 +235,7 @@ const AdminPage: FC = () => {
       }
 
       const params = new URLSearchParams(queryParams);
-      const response = await axios.get(`http://localhost:8000/get_leads/?${params.toString()}`);
+      const response = await axios.get(`/get_leads/?${params.toString()}`);
       setLeads(response.data);
     } catch (error) {
       console.warn("Backend error, check if FastAPI is running.");

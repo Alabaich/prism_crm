@@ -49,7 +49,7 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
-        const res = await fetch("http://localhost:8000/bookings/blocked-dates");
+        const res = await fetch("/bookings/blocked-dates");
         if (res.ok) {
           const data = await res.json();
           // Ensure data is just an array of strings
@@ -105,7 +105,7 @@ const BookingPage: React.FC = () => {
       setIsLoadingSlots(true);
       try {
         const res = await fetch(
-          `http://localhost:8000/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`
+          `/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`
         );
 
         if (res.ok) {
@@ -149,7 +149,7 @@ const BookingPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:8000/bookings/", {
+      const response = await fetch("/bookings/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
