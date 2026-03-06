@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import SessionLocal
-from models import Booking, Lead, BlockedDate
+from models import Booking, Lead, BlockedDate, Tenant # <-- Added Tenant here
 import logging
 from datetime import datetime, timedelta
 from mailer import send_booking_notification, create_ics_event  # <-- import mailer and ICS generator
@@ -21,6 +21,10 @@ def get_db():
 # --- Pydantic Schemas ---
 class StatusUpdate(BaseModel):
     status: str
+
+# NEW: Schema for the outcome of the tour
+class OutcomeUpdate(BaseModel):
+    tour_outcome: str
 
 class BlockedDateCreate(BaseModel):
     date: str
@@ -47,6 +51,7 @@ def get_all_bookings(db: Session = Depends(get_db)):
             "date": booking.tour_date,
             "time": booking.tour_time,
             "status": booking.status,
+            "tour_outcome": booking.tour_outcome, # NEW: Added this so frontend can show the conversion!
             "created_at": booking.created_at,
             "name": lead.prospect_name,
             "email": lead.email,
@@ -67,7 +72,7 @@ def update_booking_status(booking_id: int, payload: StatusUpdate, db: Session = 
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
-    valid_statuses = ["pending", "confirmed", "cancelled", "Scheduled", "Cancelled"]
+    valid_statuses = ["pending", "confirmed", "cancelled", "Scheduled", "Cancelled", "Completed"]
     if payload.status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
     
@@ -131,7 +136,43 @@ def update_booking_status(booking_id: int, payload: StatusUpdate, db: Session = 
     
     return {"message": f"Booking {booking_id} status updated to {payload.status}"}
 
-# --- NEW BLOCKED DATES ADMIN ENDPOINTS ---
+# --- NEW: THE TROJAN HORSE ENDPOINT ---
+@router.put("/{booking_id}/outcome")
+def update_booking_outcome(booking_id: int, payload: OutcomeUpdate, db: Session = Depends(get_db)):
+    """
+    Records the outcome of the tour.
+    If 'Converted to Tenant', it automatically creates a Tenant record for future portal use.
+    """
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # 1. Update the booking outcome (Boss gets his analytics)
+    booking.tour_outcome = payload.tour_outcome
+    booking.status = "Completed" # Naturally, if there's an outcome, the tour happened
+
+    # 2. Check for the magic conversion word
+    if payload.tour_outcome == "Converted to Tenant":
+        lead = db.query(Lead).filter(Lead.id == booking.lead_id).first()
+        
+        if lead:
+            # Update Lead Status
+            lead.status = "Tenant"
+            
+            # 3. Create the Tenant Record (Your future-proof architecture)
+            existing_tenant = db.query(Tenant).filter(Tenant.lead_id == lead.id).first()
+            if not existing_tenant:
+                new_tenant = Tenant(
+                    lead_id=lead.id,
+                    lease_status="Pending Signature"
+                )
+                db.add(new_tenant)
+
+    db.commit()
+    return {"status": "success", "message": f"Booking outcome marked as {payload.tour_outcome}"}
+
+
+# --- BLOCKED DATES ADMIN ENDPOINTS ---
 
 @router.get("/blocked-dates")
 def get_blocked_dates(db: Session = Depends(get_db)):

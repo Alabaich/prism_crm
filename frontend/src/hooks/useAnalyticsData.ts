@@ -51,8 +51,12 @@ export function useAnalyticsData() {
     const emailToSources: Record<string, string[]> = {};
     const emailToLeads: Record<string, Lead[]> = {};
     
-    // New conversion grouping
+    // Conversion grouping
     const bookingsBySource: Record<string, number> = {};
+    const tenantsBySource: Record<string, number> = {}; // NEW: Track tenants per source
+    
+    let totalToursWithinRange = 0;
+    let totalTenantsWithinRange = 0;
 
     // 1. Process Leads
     allLeads.forEach((lead) => {
@@ -74,20 +78,34 @@ export function useAnalyticsData() {
         if (!emailToLeads[lead.email]) emailToLeads[lead.email] = [];
         emailToLeads[lead.email].push(lead);
       }
+      
+      // We also check Lead status as a fallback for total tenants in funnel
+      if (lead.status === "Tenant") {
+        totalTenantsWithinRange++;
+      }
     });
 
     // 2. Process Bookings (Filter by date range manually)
     allBookings.forEach((booking) => {
+      if (!booking.date) return;
       const bookingDate = new Date(booking.date).toISOString().split('T')[0];
       
       // Only count bookings that fall within the selected Analytics date range
       if (bookingDate >= dateRange.start && bookingDate <= dateRange.end) {
         const source = booking.source || "Direct / Website";
         bookingsBySource[source] = (bookingsBySource[source] || 0) + 1;
+        totalToursWithinRange++;
+
+        // NEW: Track if this specific tour resulted in a tenant
+        if (booking.tour_outcome === "Converted to Tenant") {
+          tenantsBySource[source] = (tenantsBySource[source] || 0) + 1;
+          // We don't increment totalTenantsWithinRange here to avoid double-counting 
+          // if we already caught it in the leads loop. 
+        }
       }
     });
 
-    // 3. Generate Conversion Data for Chart
+    // 3. Generate Conversion Data for Charts
     // We only display sources that aren't the internal "Tour Booking App"
     const tourConversionData = Object.keys(totalLeadsBySource)
       .filter(source => source !== "Tour Booking App")
@@ -106,6 +124,32 @@ export function useAnalyticsData() {
         };
       })
       .sort((a, b) => b.conversionRate - a.conversionRate);
+
+    // NEW: Generate Tenant Conversion Data (Tours -> Tenants)
+    const tenantConversionData = Object.keys(bookingsBySource)
+      .filter(source => source !== "Tour Booking App")
+      .map(source => {
+        const totalTours = bookingsBySource[source] || 0;
+        const convertedTenants = tenantsBySource[source] || 0;
+        const conversionRate = totalTours > 0 
+          ? Math.round((convertedTenants / totalTours) * 100) 
+          : 0;
+
+        return {
+          label: source,
+          conversionRate,
+          totalTours,
+          convertedTenants
+        };
+      })
+      .sort((a, b) => b.conversionRate - a.conversionRate);
+
+    // NEW: Generate Funnel Data
+    const funnelData = {
+      totalLeads: allLeads.length,
+      totalTours: totalToursWithinRange,
+      totalTenants: totalTenantsWithinRange
+    };
 
     // Existing Chart/Stats formatting
     const chartData = Object.entries(leadsByDate)
@@ -170,7 +214,9 @@ export function useAnalyticsData() {
       chartData,
       pieChartData,
       overlappingGroups,
-      tourConversionData // Returning new dataset
+      tourConversionData, 
+      tenantConversionData, // NEW Export
+      funnelData            // NEW Export
     };
   }, [allLeads, allBookings, dateRange]);
 

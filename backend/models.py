@@ -30,6 +30,7 @@ class Lead(Base):
     promotion = Column(String, nullable=True)
     
     # Status
+    # Standard flow: New -> Tour Scheduled -> Application -> Tenant
     status = Column(String, default="New", index=True)
     
     # Debugging Columns
@@ -37,8 +38,11 @@ class Lead(Base):
     debug_2 = Column(Text, nullable=True)
 
     # --- RELATIONSHIPS ---
-    # One Lead can have multiple Bookings. This links the Lead to the Booking table.
+    # One Lead can have multiple Bookings.
     bookings = relationship("Booking", back_populates="lead")
+    
+    # NEW: One Lead becomes exactly one Tenant profile (uselist=False makes it 1-to-1)
+    tenant = relationship("Tenant", back_populates="lead", uselist=False)
 
 
 class Booking(Base):
@@ -48,7 +52,6 @@ class Booking(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # --- FOREIGN KEY ---
-    # This specifically links this booking to a Lead ID in the leads table
     lead_id = Column(Integer, ForeignKey("leads.id")) 
     
     # Tour Details
@@ -58,12 +61,35 @@ class Booking(Base):
     
     status = Column(String, default="Scheduled") # Can be Scheduled, Cancelled, Completed
 
+    # NEW: Granular analytics for the boss. Tracks exactly what happened after THIS specific tour.
+    tour_outcome = Column(String, nullable=True) # e.g., "Converted to Tenant", "Not Interested", "No Show"
+
     # --- RELATIONSHIPS ---
-    # This allows us to easily access the Lead info from the Booking object
     lead = relationship("Lead", back_populates="bookings")
 
 
-# --- NEW TABLE FOR BLOCKING DATES ---
+# --- NEW: FUTURE-PROOF TENANT TABLE ---
+# This serves the boss's Monday deadline for "analytics" but sets you up for the Tenant Portal later.
+class Tenant(Base):
+    __tablename__ = "tenants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # --- FOREIGN KEY ---
+    # unique=True ensures one Lead can't accidentally spawn multiple tenant portal accounts
+    lead_id = Column(Integer, ForeignKey("leads.id"), unique=True, index=True)
+    
+    # --- FUTURE PORTAL FIELDS (Leave nullable for Monday's quick fix) ---
+    user_account_id = Column(Integer, nullable=True) # Future link to Auth/Users table for login
+    lease_status = Column(String, default="Pending Signature") # Future: Active, Notice Given, Past
+    unit_number = Column(String, nullable=True)
+    
+    # --- RELATIONSHIPS ---
+    lead = relationship("Lead", back_populates="tenant")
+
+
+# --- TABLE FOR BLOCKING DATES ---
 class BlockedDate(Base):
     __tablename__ = "blocked_dates"
     

@@ -4,7 +4,7 @@ from sqlalchemy import desc, asc
 from typing import List, Optional
 from datetime import date, timedelta 
 from database import SessionLocal
-from models import Lead
+from models import Lead, Tenant # <-- Added Tenant so SQLAlchemy knows about the relationship
 
 router = APIRouter()
 
@@ -34,6 +34,8 @@ def get_leads(
     """
     API for frontend.
     Supports pagination, filtering by status, search, dynamic sorting, AND Date Range.
+    (Note: Because we dynamically filter by status, you can now pass status="Tenant" 
+    from the frontend without changing this code!)
     """
     query = db.query(Lead)
 
@@ -53,7 +55,7 @@ def get_leads(
             (Lead.email.ilike(search_fmt))
         )
 
-    # 3. Date Range Filter (New Logic)
+    # 3. Date Range Filter
     if start_date:
         # Leads created on or after the start date (at 00:00:00)
         query = query.filter(Lead.created_at >= start_date)

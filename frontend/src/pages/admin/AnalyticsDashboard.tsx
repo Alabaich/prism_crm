@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Added for navigation
 import { useAnalyticsData } from "../../hooks/useAnalyticsData";
-import { AnalyticsHeader } from "../../components/AnalyticsHeader";
-import { KPICards } from "../../components/KPICards";
-import { LeadsTrendChart } from "../../components/LeadsTrendChart";
-import { PlatformPerformance } from "../../components/PlatformPerformance";
+import { AnalyticsHeader } from "../../components/admin/AnalyticsHeader";
+import { KPICards } from "../../components/admin/KPICards";
+import { LeadsTrendChart } from "../../components/admin/LeadsTrendChart";
+import { PlatformPerformance } from "../../components/admin/PlatformPerformance";
 import { SourcePieChart } from "../../components/admin/SourcePieChart";
 import { OverlapSummary } from "../../components/admin/OverlapSummary";
-import { OverlapModal } from "../../components/OverlapModal";
+import { OverlapModal } from "../../components/admin/OverlapModal";
 import { TourConversionChart } from "../../components/admin/tourConversionChart";
+import { TenantConversionChart } from "../../components/admin/TenantConversionChart";
+import { ConversionFunnel } from "../../components/admin/ConversionFunnel";
 
 export default function AnalyticsDashboard() {
   const navigate = useNavigate(); // Hook to handle redirection
@@ -56,6 +58,9 @@ export default function AnalyticsDashboard() {
 
             {/* Bottom-of-Funnel conversion */}
             <TourConversionChart data={analytics.tourConversionData} />
+
+              <ConversionFunnel data={analytics.funnelData} />
+              <TenantConversionChart data={analytics.tenantConversionData} />
           </div>
 
           <KPICards 

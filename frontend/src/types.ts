@@ -5,6 +5,7 @@ export interface Lead {
   source: string;
   created_at: string;
   prospect_name?: string;
+  status?: string; // NEW: Added to track if they are "New", "Tenant", etc.
 }
 
 export interface OverlapGroup {
@@ -30,7 +31,9 @@ export interface Booking {
   building: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'Completed' | 'Scheduled'; 
+  tour_outcome?: string; 
+  source?: string;       
 }
 
 export interface BlockedDate {

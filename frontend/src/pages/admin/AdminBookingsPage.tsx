@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle, XCircle, AlertCircle, Tag } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle, XCircle, AlertCircle, Tag, Home } from 'lucide-react';
 
 // Inline Header to ensure compilation in standalone mode
 const Header: React.FC<{ currentView?: string }> = ({ currentView }) => (
@@ -20,7 +20,8 @@ interface Booking {
   building: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'Completed';
+  tour_outcome?: string; // NEW: Added to track if they became a tenant
   created_at: string;
   source?: string;
 }
@@ -37,7 +38,7 @@ const AdminPage: React.FC = () => {
 
   const fetchBookings = async () => {
     try {
-      // Fetching from the new separated admin endpoint
+      // Fetching from the separated admin endpoint
       const res = await fetch('/admin/bookings/');
       if (!res.ok) throw new Error('Failed to fetch bookings');
       const data = await res.json();
@@ -61,6 +62,26 @@ const AdminPage: React.FC = () => {
       if (!res.ok) throw new Error('Failed to update status');
       
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  // NEW: Handler for the Trojan Horse conversion button
+  const handleOutcomeChange = async (id: number, outcome: string) => {
+    setUpdating(id);
+    try {
+      const res = await fetch(`/admin/bookings/${id}/outcome`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tour_outcome: outcome }),
+      });
+      if (!res.ok) throw new Error('Failed to update outcome');
+      
+      // Update the local state to show it was converted, and automatically mark status as Completed
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, tour_outcome: outcome, status: 'Completed' } : b));
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -117,13 +138,15 @@ const AdminPage: React.FC = () => {
                     <th className="px-6 py-4">Visitor Details</th>
                     <th className="px-6 py-4">Source</th>
                     <th className="px-6 py-4">Status</th>
+                    {/* NEW: Outcome Column Header */}
+                    <th className="px-6 py-4">Outcome</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {bookings.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
                         No bookings found.
                       </td>
                     </tr>
@@ -176,19 +199,41 @@ const AdminPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
-                            booking.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                            (booking.status === 'confirmed' || booking.status === 'Completed') ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                             booking.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
                             'bg-amber-100 text-amber-800 border border-amber-200'
                           }`}>
-                            {booking.status === 'confirmed' && <CheckCircle className="w-3.5 h-3.5" />}
+                            {(booking.status === 'confirmed' || booking.status === 'Completed') && <CheckCircle className="w-3.5 h-3.5" />}
                             {booking.status === 'cancelled' && <XCircle className="w-3.5 h-3.5" />}
                             {booking.status === 'pending' && <AlertCircle className="w-3.5 h-3.5" />}
                             {booking.status}
                           </span>
                         </td>
+                        
+                        {/* NEW: The Outcome Column Display Logic */}
+                        <td className="px-6 py-4">
+                          {booking.tour_outcome ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                              <Home className="w-3.5 h-3.5" />
+                              {booking.tour_outcome}
+                            </span>
+                          ) : (booking.status === 'confirmed' || booking.status === 'Completed') ? (
+                            <button
+                              onClick={() => handleOutcomeChange(booking.id, 'Converted to Tenant')}
+                              disabled={updating === booking.id}
+                              className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+                            >
+                              <Home className="w-3.5 h-3.5" />
+                              Convert
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">Awaiting Tour</span>
+                          )}
+                        </td>
+
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {booking.status !== 'confirmed' && (
+                            {(booking.status !== 'confirmed' && booking.status !== 'Completed') && (
                               <button
                                 onClick={() => handleStatusChange(booking.id, 'confirmed')}
                                 disabled={updating === booking.id}
