@@ -49,7 +49,7 @@ const safeData = data || { totalLeads: 0, totalTours: 0, totalShowedUp: 0, total
         {/* Arrow 1 */}
         <div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
           <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
-            {tourRate}% Booked
+            {tourRate}%
           </div>
           <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
         </div>
@@ -66,7 +66,7 @@ const safeData = data || { totalLeads: 0, totalTours: 0, totalShowedUp: 0, total
 {/* Arrow 2 */}
 <div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
   <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
-    {showedUpRate}% Showed Up  {/* 👈 was "Converted" */}
+    {showedUpRate}%  {/* 👈 was "Converted" */}
   </div>
   <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
 </div>
@@ -83,7 +83,7 @@ const safeData = data || { totalLeads: 0, totalTours: 0, totalShowedUp: 0, total
 {/* Arrow 3 */}
 <div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
   <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
-    {tenantRate}% Converted
+    {tenantRate}%  
   </div>
   <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
 </div>

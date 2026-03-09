@@ -27,13 +27,16 @@ export const TourConversionChart: React.FC<TourConversionChartProps> = ({ data }
         </div>
       </div>
       
-      {data.length === 0 ? (
+{data.length === 0 ? (
         <div className="h-48 flex items-center justify-center text-slate-400 italic text-sm">
           Not enough data to display conversions.
         </div>
       ) : (
         <div className="h-48 w-full flex items-end gap-3 sm:gap-6 pt-8">
-          {data.map((d, i) => (
+          {/* Add the .filter() right here before the .map() */}
+          {data
+            .filter((d) => d.label !== "Website Booking")
+            .map((d, i) => (
             <div key={i} className="flex-1 flex flex-col justify-end items-center group relative h-full">
               
               {/* Detailed Hover Tooltip */}
