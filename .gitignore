@@ -78,3 +78,5 @@ pg_data/
 users.json
 
 token.json
+
+backend/logs/
