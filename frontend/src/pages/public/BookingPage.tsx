@@ -9,19 +9,14 @@ import {
   Phone,
   CheckCircle2,
 } from "lucide-react";
-import { format, addDays, startOfToday, isSunday } from "date-fns";
+import { format, addDays, startOfToday, isSunday, isSaturday } from "date-fns";
 import Header from "../../components/Header";
 
 
 const BUILDINGS = ["80 Bond St E", "100 Bond St E"];
 const TIME_SLOTS = [
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
+  "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00"
 ];
 
 const BookingPage: React.FC = () => {
@@ -117,8 +112,11 @@ const BookingPage: React.FC = () => {
             const isToday = prev.date === format(today, "yyyy-MM-dd");
             const slotHour = prev.time ? parseInt(prev.time.split(":")[0], 10) : null;
             const isPassedToday = isToday && slotHour !== null && slotHour <= currentHour;
+            const isSat = isSaturday(new Date(formData.date));  // 👈 added
+            const isSaturdayEvening = isSat && prev.time === "16:00";   // 👈 added
+            const shouldClear = data.includes(prev.time) || isPassedToday || isSaturdayEvening; // 👈 updated
 
-            if (data.includes(prev.time) || isPassedToday) {
+            if (shouldClear) {
               if (prev.time !== "") {
                 return { ...prev, time: "" };
               }
@@ -183,6 +181,8 @@ const BookingPage: React.FC = () => {
     }
   };
 
+
+
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col">
       <Header currentView="booking" />
@@ -195,6 +195,7 @@ const BookingPage: React.FC = () => {
             <p className="text-zinc-500">
               Experience our premium spaces at 80 and 100 Bond St E.
             </p>
+
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
@@ -306,8 +307,8 @@ const BookingPage: React.FC = () => {
                           const isToday = formData.date === format(today, 'yyyy-MM-dd');
                           const slotHour = parseInt(t.split(':')[0], 10);
                           const isPassedToday = isToday && slotHour <= currentHour;
-                          
-                          const isDisabled = isTaken || isPassedToday;
+                          const isSaturdayEvening = isSaturday(new Date(formData.date)) && t === "16:00";
+                          const isDisabled = isTaken || isPassedToday || isSaturdayEvening;
 
                           return (
                             <button

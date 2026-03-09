@@ -1,11 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle, XCircle, AlertCircle, Tag, Home } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { format } from "date-fns";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Tag,
+  Home,
+  CheckCircle2,
+  UserX,
+  CalendarIcon,
+    Search, 
+  X,      
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Inline Header to ensure compilation in standalone mode
 const Header: React.FC<{ currentView?: string }> = ({ currentView }) => (
   <header className="bg-white border-b border-zinc-200 px-6 py-4 flex items-center justify-between shadow-sm">
-    <div className="font-bold text-zinc-800 text-lg">Prism Property Management</div>
+    <div className="font-bold text-zinc-800 text-lg">
+      Prism Property Management
+    </div>
     <div className="text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-md">
       Admin View
     </div>
@@ -20,17 +40,30 @@ interface Booking {
   building: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'Completed';
+  status: "pending" | "confirmed" | "cancelled" | "Completed";
   tour_outcome?: string; // NEW: Added to track if they became a tenant
   created_at: string;
   source?: string;
 }
 
 const AdminPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [updating, setUpdating] = useState<number | null>(null);
+
+  const filteredBookings = bookings.filter((b) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      b.name?.toLowerCase().includes(q) ||
+      b.email?.toLowerCase().includes(q) ||
+      b.building?.toLowerCase().includes(q) ||
+      b.date?.includes(q)
+    );
+  });
 
   useEffect(() => {
     fetchBookings();
@@ -39,8 +72,8 @@ const AdminPage: React.FC = () => {
   const fetchBookings = async () => {
     try {
       // Fetching from the separated admin endpoint
-      const res = await fetch('/admin/bookings/');
-      if (!res.ok) throw new Error('Failed to fetch bookings');
+      const res = await fetch("/admin/bookings/");
+      if (!res.ok) throw new Error("Failed to fetch bookings");
       const data = await res.json();
       setBookings(data);
     } catch (err: any) {
@@ -50,18 +83,23 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: number, status: 'confirmed' | 'cancelled') => {
+  const handleStatusChange = async (
+    id: number,
+    status: "confirmed" | "cancelled" | "Completed",
+  ) => {
     setUpdating(id);
     try {
       // Updating status via the admin endpoint
       const res = await fetch(`/admin/bookings/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error('Failed to update status');
-      
-      setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+      if (!res.ok) throw new Error("Failed to update status");
+
+      setBookings((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, status } : b)),
+      );
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -74,14 +112,20 @@ const AdminPage: React.FC = () => {
     setUpdating(id);
     try {
       const res = await fetch(`/admin/bookings/${id}/outcome`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tour_outcome: outcome }),
       });
-      if (!res.ok) throw new Error('Failed to update outcome');
-      
+      if (!res.ok) throw new Error("Failed to update outcome");
+
       // Update the local state to show it was converted, and automatically mark status as Completed
-      setBookings(prev => prev.map(b => b.id === id ? { ...b, tour_outcome: outcome, status: 'Completed' } : b));
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === id
+            ? { ...b, tour_outcome: outcome, status: "Completed" }
+            : b,
+        ),
+      );
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -117,14 +161,48 @@ const AdminPage: React.FC = () => {
         <div className="mx-auto">
           <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Tours Dashboard</h1>
-              <p className="text-slate-500 mt-1">Manage upcoming tours for 80/100 Bond St E.</p>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Tours Dashboard
+              </h1>
+              <p className="text-slate-500 mt-1">
+                Manage upcoming tours for 80/100 Bond St E.
+              </p>
             </div>
-            <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 flex items-center gap-2">
-              Total Bookings
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
-                {bookings.length}
-              </span>
+
+            {/* 👇 Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by name, email, building..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition text-sm bg-white w-72 shadow-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 flex items-center gap-2">
+                Total Bookings
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                  {filteredBookings.length}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate("/booking")}
+                className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl border border-zinc-700 shadow-sm text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+              >
+                <CalendarIcon className="w-4 h-4" />
+                Book a Tour
+              </button>
             </div>
           </div>
 
@@ -144,23 +222,36 @@ const AdminPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {bookings.length === 0 ? (
+                  {filteredBookings.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
-                        No bookings found.
+                      <td
+                        colSpan={7}
+                        className="px-6 py-12 text-center text-slate-500 italic"
+                      >
+                        {searchTerm
+                          ? `No bookings match "${searchTerm}".`
+                          : "No bookings found."}
                       </td>
                     </tr>
                   ) : (
-                    bookings.map(booking => (
-                      <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
+                    filteredBookings.map((booking) => (
+                      <tr
+                        key={booking.id}
+                        className="hover:bg-slate-50/80 transition-colors"
+                      >
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-800 flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-blue-500" />
-                            {booking.date ? format(new Date(booking.date), 'MMM d, yyyy') : 'No Date'}
+                            {booking.date
+                              ? format(
+                                  new Date(booking.date + "T00:00:00"),
+                                  "MMM d, yyyy",
+                                )
+                              : "No Date"}
                           </div>
                           <div className="text-slate-500 mt-1.5 flex items-center gap-2 font-medium">
                             <Clock className="w-4 h-4 text-amber-500" />
-                            {booking.time || 'No Time'}
+                            {booking.time || "No Time"}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -176,40 +267,59 @@ const AdminPage: React.FC = () => {
                           </div>
                           <div className="text-slate-500 mt-1.5 flex items-center gap-2">
                             <Mail className="w-4 h-4 text-slate-400" />
-                            <a href={`mailto:${booking.email}`} className="hover:text-blue-600 transition-colors">
+                            <a
+                              href={`mailto:${booking.email}`}
+                              className="hover:text-blue-600 transition-colors"
+                            >
                               {booking.email}
                             </a>
                           </div>
                           {booking.phone && (
                             <div className="text-slate-500 mt-1.5 flex items-center gap-2">
                               <Phone className="w-4 h-4 text-slate-400" />
-                              <a href={`tel:${booking.phone}`} className="hover:text-blue-600 transition-colors">
+                              <a
+                                href={`tel:${booking.phone}`}
+                                className="hover:text-blue-600 transition-colors"
+                              >
                                 {booking.phone}
                               </a>
                             </div>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          {(!booking.source || booking.source !== 'Tour Booking App') && (
+                          {(!booking.source ||
+                            booking.source !== "Tour Booking App") && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
                               <Tag className="w-3.5 h-3.5" />
-                              {booking.source || 'Direct / Website'}
+                              {booking.source || "Direct / Website"}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
-                            (booking.status === 'confirmed' || booking.status === 'Completed') ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                            booking.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
-                            'bg-amber-100 text-amber-800 border border-amber-200'
-                          }`}>
-                            {(booking.status === 'confirmed' || booking.status === 'Completed') && <CheckCircle className="w-3.5 h-3.5" />}
-                            {booking.status === 'cancelled' && <XCircle className="w-3.5 h-3.5" />}
-                            {booking.status === 'pending' && <AlertCircle className="w-3.5 h-3.5" />}
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                              booking.status === "confirmed" ||
+                              booking.status === "Completed"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : booking.status === "cancelled"
+                                  ? "bg-red-100 text-red-800 border border-red-200"
+                                  : "bg-amber-100 text-amber-800 border border-amber-200"
+                            }`}
+                          >
+                            {(booking.status === "confirmed" ||
+                              booking.status === "Completed") && (
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            )}
+                            {booking.status === "cancelled" && (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
+                            {booking.status === "pending" && (
+                              <AlertCircle className="w-3.5 h-3.5" />
+                            )}
                             {booking.status}
                           </span>
                         </td>
-                        
+
                         {/* NEW: The Outcome Column Display Logic */}
                         <td className="px-6 py-4">
                           {booking.tour_outcome ? (
@@ -217,9 +327,15 @@ const AdminPage: React.FC = () => {
                               <Home className="w-3.5 h-3.5" />
                               {booking.tour_outcome}
                             </span>
-                          ) : (booking.status === 'confirmed' || booking.status === 'Completed') ? (
+                          ) : booking.status === "confirmed" ||
+                            booking.status === "Completed" ? (
                             <button
-                              onClick={() => handleOutcomeChange(booking.id, 'Converted to Tenant')}
+                              onClick={() =>
+                                handleOutcomeChange(
+                                  booking.id,
+                                  "Converted to Tenant",
+                                )
+                              }
                               disabled={updating === booking.id}
                               className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
                             >
@@ -227,24 +343,60 @@ const AdminPage: React.FC = () => {
                               Convert
                             </button>
                           ) : (
-                            <span className="text-slate-400 text-xs italic">Awaiting Tour</span>
+                            <span className="text-slate-400 text-xs italic">
+                              Awaiting Tour
+                            </span>
                           )}
                         </td>
 
                         <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {(booking.status !== 'confirmed' && booking.status !== 'Completed') && (
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                            {booking.status !== "confirmed" &&
+                              booking.status !== "Completed" && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(booking.id, "confirmed")
+                                  }
+                                  disabled={updating === booking.id}
+                                  className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
+                                >
+                                  Confirm
+                                </button>
+                              )}
+
+                            {booking.status === "confirmed" &&
+                              !booking.tour_outcome && (
+                                <>
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(
+                                        booking.id,
+                                        "Completed",
+                                      )
+                                    }
+                                    disabled={updating === booking.id}
+                                    className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                                    Showed Up
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleOutcomeChange(booking.id, "No Show")
+                                    }
+                                    disabled={updating === booking.id}
+                                    className="text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+                                  >
+                                    <UserX className="w-3.5 h-3.5" /> No Show
+                                  </button>
+                                </>
+                              )}
+
+                            {booking.status !== "cancelled" && (
                               <button
-                                onClick={() => handleStatusChange(booking.id, 'confirmed')}
-                                disabled={updating === booking.id}
-                                className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
-                              >
-                                Confirm
-                              </button>
-                            )}
-                            {booking.status !== 'cancelled' && (
-                              <button
-                                onClick={() => handleStatusChange(booking.id, 'cancelled')}
+                                onClick={() =>
+                                  handleStatusChange(booking.id, "cancelled")
+                                }
                                 disabled={updating === booking.id}
                                 className="text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
                               >

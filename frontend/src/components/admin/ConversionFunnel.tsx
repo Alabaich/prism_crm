@@ -1,9 +1,10 @@
 import React from "react";
-import { Users, CalendarCheck, Home, ArrowRight, TrendingUp } from "lucide-react";
+import { Users, CalendarCheck, Home, ArrowRight, TrendingUp, UserCheck } from "lucide-react";
 
 export interface FunnelData {
   totalLeads: number;
   totalTours: number;
+  totalShowedUp: number;
   totalTenants: number;
 }
 
@@ -13,10 +14,14 @@ interface ConversionFunnelProps {
 
 export const ConversionFunnel: React.FC<ConversionFunnelProps> = ({ data }) => {
   // Safe calculations to avoid dividing by zero
-  const safeData = data || { totalLeads: 0, totalTours: 0, totalTenants: 0 };
+const safeData = data || { totalLeads: 0, totalTours: 0, totalShowedUp: 0, totalTenants: 0 };
   const tourRate = safeData.totalLeads > 0 ? Math.round((safeData.totalTours / safeData.totalLeads) * 100) : 0;
-  const tenantRate = safeData.totalTours > 0 ? Math.round((safeData.totalTenants / safeData.totalTours) * 100) : 0;
+  const tenantRate = safeData.totalShowedUp > 0 
+  ? Math.round((safeData.totalTenants / safeData.totalShowedUp) * 100) 
+  : 0;
   const overallRate = safeData.totalLeads > 0 ? Math.round((safeData.totalTenants / safeData.totalLeads) * 100) : 0;
+  const showedUpRate = safeData.totalTours > 0 ? Math.round((safeData.totalShowedUp / safeData.totalTours) * 100) : 0;
+
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm w-full">
@@ -58,13 +63,30 @@ export const ConversionFunnel: React.FC<ConversionFunnelProps> = ({ data }) => {
           <span className="text-sm font-bold text-indigo-700 uppercase tracking-wide mt-1">Tours Booked</span>
         </div>
 
-        {/* Arrow 2 */}
-        <div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
-          <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
-            {tenantRate}% Converted
-          </div>
-          <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
-        </div>
+{/* Arrow 2 */}
+<div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
+  <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
+    {showedUpRate}% Showed Up  {/* 👈 was "Converted" */}
+  </div>
+  <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
+</div>
+
+        {/* Stage 3: Showed Up */}
+<div className="flex-1 w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative group hover:bg-emerald-100 transition-colors">
+  <div className="bg-emerald-200/50 p-3 rounded-xl mb-3 text-emerald-600">
+    <UserCheck className="w-6 h-6" />
+  </div>
+  <span className="text-3xl font-black text-slate-800">{safeData.totalShowedUp}</span>
+  <span className="text-sm font-bold text-emerald-700 uppercase tracking-wide mt-1">Showed Up</span>
+</div>
+
+{/* Arrow 3 */}
+<div className="flex flex-col items-center justify-center -my-2 md:my-0 z-10">
+  <div className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 text-xs font-bold text-slate-500 mb-1">
+    {tenantRate}% Converted
+  </div>
+  <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
+</div>
 
         {/* Stage 3: Tenants */}
         <div className="flex-1 w-full bg-purple-50 border border-purple-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative group hover:bg-purple-100 transition-colors">
