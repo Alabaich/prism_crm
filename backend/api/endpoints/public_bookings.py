@@ -90,10 +90,14 @@ def create_booking(booking_data: BookingCreate, db: Session = Depends(get_db)):
     logger.info(f"🚀 New public booking request received for {booking_data.email} at {booking_data.building}")
     
     # Find or create lead
-    existing_lead = db.query(Lead).filter(
-        (Lead.email == booking_data.email) | 
-        (Lead.phone == booking_data.phone)
-    ).first()
+    if booking_data.phone and booking_data.phone.strip():
+        existing_lead = db.query(Lead).filter(
+            (Lead.email == booking_data.email) | 
+            (Lead.phone == booking_data.phone)
+        ).first()
+    else:
+        # If they left phone blank, ONLY search by email
+        existing_lead = db.query(Lead).filter(Lead.email == booking_data.email).first()
     
     if existing_lead:
         target_lead = existing_lead

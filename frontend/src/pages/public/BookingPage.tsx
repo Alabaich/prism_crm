@@ -12,18 +12,22 @@ import {
 import { format, addDays, startOfToday, isSunday, isSaturday } from "date-fns";
 import Header from "../../components/Header";
 
-
 const BUILDINGS = ["80 Bond St E", "100 Bond St E"];
 const TIME_SLOTS = [
   "09:00", "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00", "16:00"
+  "13:00", "14:00", "15:00", "16:00",
 ];
 
+// Parses "yyyy-MM-dd" as a local date (avoids UTC timezone shifts)
+const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
 const BookingPage: React.FC = () => {
-  // 1. FIXED REFERENCES: Use useState for these to prevent any reference-drop loops in Strict Mode
   const [today] = useState(() => startOfToday());
   const [currentHour] = useState(() => new Date().getHours());
-  
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     building: BUILDINGS[0],
@@ -33,21 +37,20 @@ const BookingPage: React.FC = () => {
     email: "",
     phone: "",
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
-  // 1. Fetch Blocked Dates on Mount 
+  // 1. Fetch blocked dates on mount
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
         const res = await fetch("/bookings/blocked-dates");
         if (res.ok) {
           const data = await res.json();
-          // Ensure data is just an array of strings
           setBlockedDates(Array.isArray(data) ? data : []);
         }
       } catch (err) {
@@ -57,69 +60,57 @@ const BookingPage: React.FC = () => {
     fetchBlockedDates();
   }, []);
 
-  // 2. Map available dates
-  // We use the array directly for comparison to avoid string .includes() bugs 
-  // (e.g. checking for "2026-03-01" inside "2026-03-010")
+  // 2. Build available dates list
   const availableDates = useMemo(() => {
     return Array.from({ length: 30 }).map((_, i) => {
       const date = addDays(today, i);
       const dateStr = format(date, "yyyy-MM-dd");
       const isSun = isSunday(date);
-      const isBlocked = blockedDates.some(bd => bd === dateStr);
-      
+      const isBlocked = blockedDates.some((bd) => bd === dateStr);
       const disabled = isSun || isBlocked;
+
       let labelSuffix = "";
       if (isSun) labelSuffix = " (Sunday Closed)";
       else if (isBlocked) labelSuffix = " (Unavailable)";
 
-      return {
-        date: dateStr,
-        label: format(date, "EEE, MMM d"),
-        disabled,
-        labelSuffix
-      };
+      return { date: dateStr, label: format(date, "EEE, MMM d"), disabled, labelSuffix };
     });
   }, [today, blockedDates]);
 
-  // 3. Auto-correct selected date if initial load hits a blocked day
+  // 3. Auto-correct selected date if it becomes blocked
   useEffect(() => {
-    const currentOption = availableDates.find(d => d.date === formData.date);
+    const currentOption = availableDates.find((d) => d.date === formData.date);
     if (currentOption?.disabled) {
-      const nextAvailable = availableDates.find(d => !d.disabled);
+      const nextAvailable = availableDates.find((d) => !d.disabled);
       if (nextAvailable) {
-        setFormData(prev => ({ ...prev, date: nextAvailable.date, time: "" }));
+        setFormData((prev) => ({ ...prev, date: nextAvailable.date, time: "" }));
       }
     }
   }, [availableDates, formData.date]);
 
-  // 4. Fetch taken hourly slots ONLY when Building or Date changes
+  // 4. Fetch taken slots when building or date changes
   useEffect(() => {
     const fetchTakenSlots = async () => {
       if (!formData.building || !formData.date) return;
-      
       setIsLoadingSlots(true);
       try {
         const res = await fetch(
           `/bookings/taken?building=${encodeURIComponent(formData.building)}&date=${encodeURIComponent(formData.date)}`
         );
-
         if (res.ok) {
           const data = await res.json();
           setTakenSlots(data);
 
-          // Only clear the time if the specific time they selected is taken or passed
           setFormData((prev) => {
             const isToday = prev.date === format(today, "yyyy-MM-dd");
             const slotHour = prev.time ? parseInt(prev.time.split(":")[0], 10) : null;
             const isPassedToday = isToday && slotHour !== null && slotHour <= currentHour;
-            const isSat = isSaturday(new Date(formData.date));  // 👈 added
-            const isSaturdayEvening = isSat && prev.time === "16:00";   // 👈 added
-            const shouldClear = data.includes(prev.time) || isPassedToday || isSaturdayEvening; // 👈 updated
+            const localDate = parseLocalDate(prev.date);
+            const isSaturdayEvening = isSaturday(localDate) && prev.time === "16:00";
+            const shouldClear = data.includes(prev.time) || isPassedToday || isSaturdayEvening;
 
-            if (shouldClear) {
-              if (prev.time !== "") {
-                return { ...prev, time: "" };
-              }
+            if (shouldClear && prev.time !== "") {
+              return { ...prev, time: "" };
             }
             return prev;
           });
@@ -133,11 +124,9 @@ const BookingPage: React.FC = () => {
     };
 
     fetchTakenSlots();
-  }, [formData.building, formData.date, today, currentHour]); 
+  }, [formData.building, formData.date, today, currentHour]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -149,9 +138,7 @@ const BookingPage: React.FC = () => {
     try {
       const response = await fetch("/bookings/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           building: formData.building,
           date: formData.date,
@@ -164,24 +151,30 @@ const BookingPage: React.FC = () => {
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(
-          errData.detail || "Failed to create booking. Please try again."
-        );
+        throw new Error(errData.detail || "Failed to create booking. Please try again.");
       }
 
       setStep(3);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred.");
-      }
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
+  const resetForm = () => {
+    const todayStr = format(today, "yyyy-MM-dd");
+    setStep(1);
+    setFormData({
+      building: BUILDINGS[0],
+      date: todayStr,
+      time: "",
+      name: "",
+      email: "",
+      phone: "",
+    });
+    setError("");
+  };
 
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col">
@@ -195,31 +188,31 @@ const BookingPage: React.FC = () => {
             <p className="text-zinc-500">
               Experience our premium spaces at 80 and 100 Bond St E.
             </p>
-
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
-            <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step >= s
-                        ? "bg-zinc-900 text-white"
-                        : "bg-zinc-200 text-zinc-500"
-                    }`}
-                  >
-                    {s}
-                  </div>
-                  {s < 3 && (
+            {/* Step indicator */}
+            <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center justify-center">
+                {[1, 2, 3].map((s) => (
+                  <React.Fragment key={s}>
                     <div
-                      className={`w-12 sm:w-24 h-1 mx-2 rounded-full ${
-                        step > s ? "bg-zinc-900" : "bg-zinc-200"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${
+                        step >= s ? "bg-zinc-900 text-white" : "bg-zinc-200 text-zinc-500"
                       }`}
-                    />
-                  )}
-                </div>
-              ))}
+                    >
+                      {s}
+                    </div>
+                    {s < 3 && (
+                      <div
+                        className={`flex-1 h-1 mx-2 rounded-full max-w-24 ${
+                          step > s ? "bg-zinc-900" : "bg-zinc-200"
+                        }`}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
             <div className="p-6 sm:p-8">
@@ -260,9 +253,7 @@ const BookingPage: React.FC = () => {
                             }`}
                           >
                             <div className="font-medium text-zinc-900">{b}</div>
-                            <div className="text-sm text-zinc-500 mt-1">
-                              Guided Tour
-                            </div>
+                            <div className="text-sm text-zinc-500 mt-1">Guided Tour</div>
                           </button>
                         ))}
                       </div>
@@ -276,14 +267,14 @@ const BookingPage: React.FC = () => {
                         name="date"
                         value={formData.date}
                         onChange={handleChange}
-                        className="w-full p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow bg-white disabled:bg-zinc-50 disabled:text-zinc-500"
+                        className="w-full p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow bg-white"
                       >
                         {availableDates.map((d) => (
                           <option
                             key={d.date}
                             value={d.date}
                             disabled={d.disabled}
-                            style={d.disabled ? { color: '#94a3b8' } : {}}
+                            style={d.disabled ? { color: "#94a3b8" } : {}}
                           >
                             {d.label}{d.labelSuffix}
                           </option>
@@ -303,11 +294,11 @@ const BookingPage: React.FC = () => {
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                         {TIME_SLOTS.map((t) => {
                           const isTaken = takenSlots.includes(t);
-                          
-                          const isToday = formData.date === format(today, 'yyyy-MM-dd');
-                          const slotHour = parseInt(t.split(':')[0], 10);
+                          const isToday = formData.date === format(today, "yyyy-MM-dd");
+                          const slotHour = parseInt(t.split(":")[0], 10);
                           const isPassedToday = isToday && slotHour <= currentHour;
-                          const isSaturdayEvening = isSaturday(new Date(formData.date)) && t === "16:00";
+                          const localDate = parseLocalDate(formData.date);
+                          const isSaturdayEvening = isSaturday(localDate) && t === "16:00";
                           const isDisabled = isTaken || isPassedToday || isSaturdayEvening;
 
                           return (
@@ -430,7 +421,7 @@ const BookingPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <CalendarIcon className="w-4 h-4" />{" "}
-                          {format(new Date(formData.date), "MMMM d, yyyy")}
+                          {format(parseLocalDate(formData.date), "MMMM d, yyyy")}
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" /> {formData.time}
@@ -448,9 +439,7 @@ const BookingPage: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        disabled={
-                          isSubmitting || !formData.name || !formData.email
-                        }
+                        disabled={isSubmitting || !formData.name || !formData.email}
                         className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
                         {isSubmitting ? "Confirming..." : "Confirm Booking"}
@@ -473,33 +462,23 @@ const BookingPage: React.FC = () => {
                     Booking Confirmed!
                   </h2>
                   <p className="text-zinc-600 mb-8 max-w-md mx-auto">
-                    Thank you, {formData.name}. Your tour at {formData.building}{" "}
-                    is scheduled for{" "}
-                    {format(new Date(formData.date), "MMMM d, yyyy")} at{" "}
+                    Thank you, {formData.name}. Your tour at {formData.building} is
+                    scheduled for {format(parseLocalDate(formData.date), "MMMM d, yyyy")} at{" "}
                     {formData.time}.
                   </p>
                   <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200 mb-8 text-left max-w-sm mx-auto">
                     <p className="text-sm text-zinc-600 mb-4">
                       We've sent a confirmation email to{" "}
-                      <strong>{formData.email}</strong> with a calendar
-                      invitation attached.
+                      <strong>{formData.email}</strong> with a calendar invitation
+                      attached.
                     </p>
                     <p className="text-sm text-zinc-500">
-                      Please arrive 5 minutes before your scheduled time. The
-                      admin team has also been notified.
+                      Please arrive 5 minutes before your scheduled time. The admin
+                      team has also been notified.
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      setStep(1);
-                      setFormData({
-                        ...formData,
-                        time: "",
-                        name: "",
-                        email: "",
-                        phone: "",
-                      });
-                    }}
+                    onClick={resetForm}
                     className="text-zinc-900 font-medium hover:underline"
                   >
                     Book another tour
