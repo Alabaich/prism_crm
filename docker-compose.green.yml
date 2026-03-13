@@ -1,0 +1,67 @@
+# docker-compose.green.yml — Green slot
+# Backend: host port 8002, Frontend: host port 5175
+# PostgreSQL is on the HOST at port 5433 — not in Docker
+
+services:
+  backend_green:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prism_backend_green
+    network_mode: host
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002
+    env_file: .env
+    environment:
+      - SLOT=green
+      - TZ=America/Toronto
+    restart: unless-stopped
+    volumes:
+      - ./backend:/code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  worker_green:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prism_worker_green
+    network_mode: host
+    command: python -u worker.py
+    env_file: .env
+    environment:
+      - SLOT=green
+      - TZ=America/Toronto
+    restart: unless-stopped
+    volumes:
+      - ./backend:/code
+    depends_on:
+      - backend_green
+
+  frontend_green:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: prism_frontend_green
+    ports:
+      - "5175:5173"
+    env_file: .env
+    environment:
+      - VITE_API_URL=https://prismpm.cloud:8000
+      - SLOT=green
+      - TZ=America/Toronto
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend_green
+
+volumes:
+  frontend_node_modules:

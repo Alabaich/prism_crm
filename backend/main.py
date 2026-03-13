@@ -49,3 +49,7 @@ def read_root():
         "database": "Connected",
         "system": "Prism CRM Unified Engine"
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

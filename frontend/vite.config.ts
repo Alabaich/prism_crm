@@ -13,7 +13,8 @@ export default defineConfig({
     // Add this allowedHosts array:
     allowedHosts: [
       'prismpm.cloud',
-      'www.prismpm.cloud'
+      'www.prismpm.cloud',
+      'dev.prismpm.cloud'
     ]
   }
 })
