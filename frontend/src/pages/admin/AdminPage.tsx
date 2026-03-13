@@ -1,7 +1,7 @@
 import React, { useState, useEffect} from "react";
 import type { FC } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom"; // Added for URL filtering
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   Download,
@@ -19,8 +19,7 @@ import {
   Clock,
   Building,
   MessageSquare,
-  Info,
-  FilterX,
+  Home,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -188,7 +187,6 @@ const LeadDetailModal: FC<LeadDetailModalProps> = ({ lead, onClose }) => {
 };
 
 const AdminPage: FC = () => {
-  // Extract source filter from URL search params
   const [searchParams, setSearchParams] = useSearchParams();
   const sourceFilter = searchParams.get("source");
 
@@ -199,10 +197,11 @@ const AdminPage: FC = () => {
   const [page, setPage] = useState<number>(1);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: "created_at", direction: "desc" });
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  // CHANGE 2: converting state
+  const [converting, setConverting] = useState<number | null>(null);
 
   const ITEMS_PER_PAGE = 20;
 
-  // Clear URL filter
   const clearFilter = () => {
     searchParams.delete("source");
     setSearchParams(searchParams);
@@ -229,7 +228,6 @@ const AdminPage: FC = () => {
         sort_order: sortConfig?.direction || "desc",
       };
 
-      // Add source to API call if URL filter is present
       if (sourceFilter) {
         queryParams.source = sourceFilter;
       }
@@ -246,7 +244,27 @@ const AdminPage: FC = () => {
 
   useEffect(() => {
     fetchLeads();
-  }, [page, sortConfig, debouncedSearch, sourceFilter]); // Dependency on sourceFilter ensures update when URL changes
+  }, [page, sortConfig, debouncedSearch, sourceFilter]);
+
+  // CHANGE 3: Convert to tenant handler
+  const handleConvertToTenant = async (id: number) => {
+    if (!window.confirm("Convert this lead directly to a Tenant? (No tour required)")) return;
+    setConverting(id);
+    try {
+      const res = await fetch(`/leads/${id}/convert`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to convert lead");
+      setLeads((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, status: "Tenant" } : l))
+      );
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setConverting(null);
+    }
+  };
 
   const requestSort = (key: keyof Lead) => {
     let direction: "asc" | "desc" = "asc";
@@ -366,10 +384,31 @@ const AdminPage: FC = () => {
                     <td className="p-4 text-slate-500 text-xs font-bold uppercase tracking-tighter">
                       {format(new Date(lead.created_at), "MMM d, yyyy")}
                     </td>
+                    {/* CHANGE 4: Actions cell with Convert button */}
                     <td className="p-4 text-right">
-                      <button onClick={() => setSelectedLead(lead)} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all shadow-sm hover:shadow-blue-100 bg-white border border-slate-100">
-                        <Eye className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {lead.status === "Tenant" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                            <Home className="w-3.5 h-3.5" />
+                            Tenant
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleConvertToTenant(lead.id)}
+                            disabled={converting === lead.id}
+                            className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+                          >
+                            <Home className="w-3.5 h-3.5" />
+                            Convert
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedLead(lead)}
+                          className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all shadow-sm hover:shadow-blue-100 bg-white border border-slate-100"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

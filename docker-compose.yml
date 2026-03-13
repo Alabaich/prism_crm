@@ -1,60 +1,28 @@
-version: '3.8'
-
 services:
-  db:
-    image: postgres:15-alpine
-    restart: always
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: ${DB_USER:-admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-rootpassword}
-      POSTGRES_DB: ${DB_NAME:-prism_crm}
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d ${DB_NAME:-prism_crm}"]
-      interval: 10s   # Increased from 5s
-      timeout: 5s
-      retries: 10     # Increased from 5
-      start_period: 30s # Gives the DB 30 seconds to "wake up" before failing
-
-
   backend:
     build: ./backend
     container_name: prism_backend
     restart: always
-    # Assuming your entry point will be main.py in the backend folder
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
+    network_mode: host
     env_file:
       - .env
     volumes:
       - ./backend:/code
-    environment:                  
+    environment:
       - TZ=America/Toronto
-      
 
   worker:
     build: ./backend
     container_name: prism_worker
     restart: always
-    # Command to run your background email worker script
     command: python -u worker.py
-    depends_on:
-      db:
-        condition: service_healthy
+    network_mode: host
     env_file:
       - .env
     volumes:
       - ./backend:/code
-    environment:                  
+    environment:
       - TZ=America/Toronto
 
   frontend:
@@ -74,6 +42,5 @@ services:
     stdin_open: true
     tty: true
 
-      
 volumes:
   frontend_node_modules:
