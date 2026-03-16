@@ -14,16 +14,13 @@ export function useAnalyticsData() {
 
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [allBookings, setAllBookings] = useState<any[]>([]);
-  const [previousLeadsCount, setPreviousLeadsCount] = useState<number | null>(
-    null,
-  );
+  const [previousLeadsCount, setPreviousLeadsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchAllAnalyticsData = async () => {
       setLoading(true);
       try {
-        // Current period params
         const params = new URLSearchParams({
           start_date: dateRange.start,
           end_date: dateRange.end,
@@ -31,15 +28,12 @@ export function useAnalyticsData() {
           skip: "0",
         });
 
-        // Calculate previous period (same duration, shifted back)
         const startMs = new Date(dateRange.start).getTime();
         const endMs = new Date(dateRange.end).getTime();
         const rangeMs = endMs - startMs;
 
         const prevEnd = new Date(startMs - 1).toISOString().split("T")[0];
-        const prevStart = new Date(startMs - rangeMs - 1)
-          .toISOString()
-          .split("T")[0];
+        const prevStart = new Date(startMs - rangeMs - 1).toISOString().split("T")[0];
 
         const prevParams = new URLSearchParams({
           start_date: prevStart,
@@ -107,7 +101,12 @@ export function useAnalyticsData() {
       if (lead.status === "Tenant") totalTenantsWithinRange++;
     });
 
-    allBookings.forEach((booking) => {
+    // Analytics only count tours — meetings are excluded
+    const tourBookings = allBookings.filter(
+      (b) => !b.booking_type || b.booking_type === "tour"
+    );
+
+    tourBookings.forEach((booking) => {
       if (!booking.date) return;
       const bookingDate = new Date(booking.date).toISOString().split("T")[0];
 
@@ -116,7 +115,6 @@ export function useAnalyticsData() {
         bookingsBySource[source] = (bookingsBySource[source] || 0) + 1;
         totalToursWithinRange++;
 
-        // 👇 add this
         if (
           booking.status === "Completed" &&
           booking.tour_outcome !== "No Show"
@@ -163,9 +161,7 @@ export function useAnalyticsData() {
 
     const chartData = Object.entries(leadsByDate)
       .map(([label, value]) => ({ label, value }))
-      .sort(
-        (a, b) => new Date(a.label).getTime() - new Date(b.label).getTime(),
-      );
+      .sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
 
     let duplicatesCount = 0;
     const overlapMatrix: Record<string, number> = {};
@@ -194,9 +190,7 @@ export function useAnalyticsData() {
         efficiency:
           totalLeadsBySource[source] > 0
             ? Math.round(
-                (uniqueLeadsBySource[source].size /
-                  totalLeadsBySource[source]) *
-                  100,
+                (uniqueLeadsBySource[source].size / totalLeadsBySource[source]) * 100
               )
             : 0,
       }))
@@ -238,12 +232,10 @@ export function useAnalyticsData() {
     };
   }, [allLeads, allBookings, dateRange]);
 
-  // Real growth: compares current period to previous period of same length
-  // Returns null if no previous data exists (badge won't render)
   const growthPercentage = useMemo(() => {
     if (previousLeadsCount === null || previousLeadsCount === 0) return null;
     return Math.round(
-      ((analytics.totalLeads - previousLeadsCount) / previousLeadsCount) * 100,
+      ((analytics.totalLeads - previousLeadsCount) / previousLeadsCount) * 100
     );
   }, [analytics.totalLeads, previousLeadsCount]);
 

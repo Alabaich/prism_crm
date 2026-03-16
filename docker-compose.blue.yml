@@ -17,12 +17,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend:/code
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
 
   worker_blue:
     build:
@@ -50,7 +44,6 @@ services:
       - "5174:5173"
     env_file: .env
     environment:
-      - VITE_API_URL=https://prismpm.cloud:8000
       - SLOT=blue
       - TZ=America/Toronto
       - CHOKIDAR_USEPOLLING=true

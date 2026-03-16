@@ -1,42 +1,99 @@
-import json
 import os
-from fastapi import APIRouter, HTTPException
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+import bcrypt
+import jwt
+
+from database import SessionLocal
+from models import AdminUser
 
 router = APIRouter()
+security = HTTPBearer()
 
-# Модель даних, які приходять з фронта
+# ── Config ────────────────────────────────────────────────────────────────────
+JWT_SECRET = os.getenv("JWT_SECRET", "change-this-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_DAYS = 7
+
+
+# ── DB dependency ─────────────────────────────────────────────────────────────
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-# Шлях до файлу (оскільки docker запускає main.py з кореня backend, файл шукаємо там же)
-USERS_FILE = "users.json" 
 
-@router.post("/login")
-async def login_user(creds: LoginRequest):
-    # 1. Перевіряємо чи існує файл
-    if not os.path.exists(USERS_FILE):
-        print(f"ERROR: File {USERS_FILE} not found!") # Лог для дебагу в докері
-        raise HTTPException(status_code=500, detail="User DB not initialized")
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def create_token(user: AdminUser) -> str:
+    payload = {
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+        "exp": datetime.utcnow() + timedelta(days=JWT_EXPIRE_DAYS),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-    # 2. Читаємо файл
+
+def decode_token(token: str) -> dict:
     try:
-        with open(USERS_FILE, "r") as f:
-            users_db = json.load(f)
-    except Exception as e:
-        print(f"ERROR reading json: {e}")
-        raise HTTPException(status_code=500, detail="User DB corrupted")
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-    # 3. Звіряємо паролі (Пряме порівняння, як ти і хотів для простоти)
-    if creds.username in users_db and users_db[creds.username] == creds.password:
-        return {
-            "success": True,
-            "user": {
-                "username": creds.username,
-                "role": "admin" # Поки що всім даємо адміна, бо це внутрішній тул
-            }
-        }
-    
-    # 4. Якщо не співпало
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+# ── Auth dependency (use in protected routes) ─────────────────────────────────
+def get_current_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> AdminUser:
+    payload = decode_token(credentials.credentials)
+    user = db.query(AdminUser).filter(AdminUser.id == int(payload["sub"])).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    return user
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+@router.post("/login")
+def login(creds: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.username == creds.username).first()
+
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not bcrypt.checkpw(creds.password.encode(), user.hashed_password.encode()):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_token(user)
+
+    return {
+        "success": True,
+        "token": token,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role,
+        },
+    }
+
+
+@router.get("/me")
+def me(current_user: AdminUser = Depends(get_current_admin)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "role": current_user.role,
+    }

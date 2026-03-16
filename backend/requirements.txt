@@ -8,3 +8,5 @@ requests
 email-validator
 imap-tools
 apscheduler
+bcrypt
+PyJWT

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { X, AlertCircle, Clock, User, MapPin, CheckCircle2, UserX, Home } from 'lucide-react';
+import { X, AlertCircle, Clock, User, MapPin, CheckCircle2, UserX, Home, Coffee } from 'lucide-react';
 import type { Booking } from '../../types';
 
 interface DayDetailsModalProps {
@@ -24,7 +24,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     onToggleBlock(date, !isBlocked);
   };
 
-  // --- Confirm (pending → confirmed) ---
+  // --- Confirm ---
   const handleConfirm = async (id: number) => {
     setUpdating(id);
     try {
@@ -54,7 +54,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     }
   };
 
-  // --- Showed Up (confirmed → Completed) ---
+  // --- Showed Up (confirmed → Completed) — TOURS ONLY ---
   const handleShowedUp = async (id: number) => {
     setUpdating(id);
     try {
@@ -69,7 +69,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     }
   };
 
-  // --- No Show ---
+  // --- No Show — TOURS ONLY ---
   const handleNoShow = async (id: number) => {
     setUpdating(id);
     try {
@@ -84,7 +84,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     }
   };
 
-  // --- Convert to Tenant ---
+  // --- Convert to Tenant — TOURS ONLY ---
   const handleConvert = async (id: number) => {
     setUpdating(id);
     try {
@@ -100,54 +100,52 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <h3 className="text-lg font-bold text-slate-800">
-            {format(date, 'EEEE, MMMM do, yyyy')}
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900 text-lg">
+            {format(date, 'EEEE, MMMM d')}
           </h3>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="mb-8">
-            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Availability Settings</h4>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-slate-800">Block this date</p>
-                <p className="text-sm text-slate-500">Prevent anyone from booking tours.</p>
-              </div>
-              <button
-                onClick={handleBlockToggle}
-                disabled={hasBookings && !isBlocked}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all
-                  ${isBlocked ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'}
-                  ${(hasBookings && !isBlocked) ? 'opacity-50 cursor-not-allowed' : ''}
-                `}
-              >
-                {isBlocked ? 'Unblock Date' : 'Block Date'}
-              </button>
-            </div>
-            {(hasBookings && !isBlocked) && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 font-medium">
-                <AlertCircle className="w-4 h-4" />
-                You cannot block a date that already has scheduled tours.
-              </div>
-            )}
+        <div className="p-5 space-y-5">
+          {/* Block/Unblock toggle */}
+          <div>
+            <button
+              onClick={handleBlockToggle}
+              disabled={hasBookings && !isBlocked}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                isBlocked
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  : hasBookings
+                  ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed'
+                  : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+              }`}
+            >
+              <AlertCircle className="w-4 h-4" />
+              {isBlocked ? 'Unblock This Day' : hasBookings ? 'Cannot Block (Has Bookings)' : 'Block This Day'}
+            </button>
           </div>
 
+          {/* Bookings list */}
           <div>
             <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-              Scheduled Tours <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs">{activeBookings.length}</span>
+              Scheduled
+              <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs">
+                {activeBookings.length}
+              </span>
             </h4>
 
             {activeBookings.length === 0 ? (
-              <p className="text-sm text-slate-500 italic py-4">No active tours scheduled for this day.</p>
+              <p className="text-sm text-slate-500 italic py-4">No active bookings for this day.</p>
             ) : (
               <div className="space-y-3">
                 {activeBookings.map(booking => {
+                  const isMeeting = booking.booking_type === 'meeting';
                   const isPending = booking.status === 'pending' || booking.status === 'Scheduled';
                   const isConfirmed = booking.status === 'confirmed';
                   const isCompleted = booking.status === 'Completed';
@@ -155,27 +153,43 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
                   const isNoShow = booking.tour_outcome === 'No Show';
 
                   return (
-                    <div key={booking.id} className="border border-slate-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition-all bg-white">
-                      {/* Header row: time + status badge */}
+                    <div
+                      key={booking.id}
+                      className={`border rounded-xl p-4 transition-all bg-white ${
+                        isMeeting
+                          ? 'border-amber-200 hover:border-amber-300'
+                          : 'border-slate-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                    >
+                      {/* Header row: time + type badge + status badge */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="font-bold text-slate-800 flex items-center gap-1.5">
                           <Clock className="w-4 h-4 text-blue-500" />
                           {booking.time}
                         </div>
-                        {isConverted ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-purple-100 text-purple-700">
-                            <Home className="w-3 h-3" /> Tenant
-                          </span>
-                        ) : (
-                          <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded ${
-                            isCompleted ? 'bg-emerald-100 text-emerald-700' :
-                            booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                            isConfirmed ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {isNoShow ? 'No Show' : booking.status}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {/* Meeting badge */}
+                          {isMeeting && (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">
+                              <Coffee className="w-3 h-3" /> Meeting
+                            </span>
+                          )}
+                          {/* Status badge */}
+                          {isConverted ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-purple-100 text-purple-700">
+                              <Home className="w-3 h-3" /> Tenant
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded ${
+                              isCompleted ? 'bg-emerald-100 text-emerald-700' :
+                              booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                              isConfirmed ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {isNoShow ? 'No Show' : booking.status}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Booking info */}
@@ -190,7 +204,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
 
                       {/* ── ACTION BUTTONS ── */}
 
-                      {/* PENDING: Confirm + Cancel */}
+                      {/* PENDING: Confirm + Cancel (both tours and meetings) */}
                       {isPending && (
                         <div className="flex gap-2 mt-4">
                           <button
@@ -210,8 +224,8 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
                         </div>
                       )}
 
-                      {/* CONFIRMED: Showed Up + No Show + Cancel */}
-                      {isConfirmed && !booking.tour_outcome && (
+                      {/* CONFIRMED — TOURS ONLY: Showed Up + No Show + Cancel */}
+                      {isConfirmed && !isMeeting && !booking.tour_outcome && (
                         <div className="flex gap-2 mt-4 flex-wrap">
                           <button
                             onClick={() => handleShowedUp(booking.id)}
@@ -237,8 +251,21 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
                         </div>
                       )}
 
-                      {/* COMPLETED (showed up) & not yet converted: Convert to Tenant */}
-                      {(isCompleted || isConfirmed) && !booking.tour_outcome && isCompleted && (
+                      {/* CONFIRMED — MEETINGS: just Cancel */}
+                      {isConfirmed && isMeeting && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => handleCancel(booking.id)}
+                            disabled={updating === booking.id}
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                          >
+                            <X className="w-3.5 h-3.5" /> Cancel
+                          </button>
+                        </div>
+                      )}
+
+                      {/* COMPLETED — TOURS ONLY: Convert to Tenant */}
+                      {isCompleted && !isMeeting && !booking.tour_outcome && (
                         <div className="mt-2">
                           <button
                             onClick={() => handleConvert(booking.id)}

@@ -12,19 +12,50 @@ import {
 import { format, addDays, startOfToday, isSunday, isSaturday } from "date-fns";
 import Header from "../../components/Header";
 
-const BUILDINGS = ["80 Bond St E", "100 Bond St E"];
+// Building lists per type — same for now, easy to split in the future
+const BUILDINGS_BY_TYPE: Record<string, string[]> = {
+  tour: ["80 Bond St E", "100 Bond St E"],
+  meeting: ["80 Bond St E", "100 Bond St E"],
+};
+
 const TIME_SLOTS = [
   "09:00", "10:00", "11:00", "12:00",
   "13:00", "14:00", "15:00", "16:00",
 ];
 
-// Parses "yyyy-MM-dd" as a local date (avoids UTC timezone shifts)
 const parseLocalDate = (dateStr: string): Date => {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 };
 
-const BookingPage: React.FC = () => {
+interface BookingPageProps {
+  bookingType: "tour" | "meeting";
+}
+
+const BookingPage: React.FC<BookingPageProps> = ({ bookingType }) => {
+  const isMeeting = bookingType === "meeting";
+  const BUILDINGS = BUILDINGS_BY_TYPE[bookingType];
+
+  // Copy for the two page variants
+  const copy = {
+    pageTitle: isMeeting ? "Schedule a Meeting" : "Schedule a Tour",
+    pageSubtitle: isMeeting
+      ? "Book a meeting at 80 or 100 Bond St E."
+      : "Experience our premium spaces at 80 and 100 Bond St E.",
+    step1Header: isMeeting ? "Select Location & Time" : "Select Location & Time",
+    confirmButton: isMeeting ? "Confirm Meeting" : "Confirm Booking",
+    confirmingButton: isMeeting ? "Confirming..." : "Confirming...",
+    successTitle: isMeeting ? "Meeting Confirmed!" : "Booking Confirmed!",
+    successBody: (name: string, building: string, date: string, time: string) =>
+      isMeeting
+        ? `Thank you, ${name}. Your meeting at ${building} is scheduled for ${date} at ${time}.`
+        : `Thank you, ${name}. Your tour at ${building} is scheduled for ${date} at ${time}.`,
+    resetButton: isMeeting ? "Schedule another meeting" : "Book another tour",
+    arrivalNote: isMeeting
+      ? "Please arrive a few minutes before your scheduled time."
+      : "Please arrive 5 minutes before your scheduled time. The admin team has also been notified.",
+  };
+
   const [today] = useState(() => startOfToday());
   const [currentHour] = useState(() => new Date().getHours());
 
@@ -146,6 +177,7 @@ const BookingPage: React.FC = () => {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          booking_type: bookingType,
         }),
       });
 
@@ -163,11 +195,10 @@ const BookingPage: React.FC = () => {
   };
 
   const resetForm = () => {
-    const todayStr = format(today, "yyyy-MM-dd");
     setStep(1);
     setFormData({
       building: BUILDINGS[0],
-      date: todayStr,
+      date: format(today, "yyyy-MM-dd"),
       time: "",
       name: "",
       email: "",
@@ -183,11 +214,9 @@ const BookingPage: React.FC = () => {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 mb-2">
-              Schedule a Tour
+              {copy.pageTitle}
             </h1>
-            <p className="text-zinc-500">
-              Experience our premium spaces at 80 and 100 Bond St E.
-            </p>
+            <p className="text-zinc-500">{copy.pageSubtitle}</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
@@ -230,7 +259,7 @@ const BookingPage: React.FC = () => {
                 >
                   <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-zinc-400" />
-                    Select Location & Time
+                    {copy.step1Header}
                   </h2>
 
                   <div className="space-y-6">
@@ -249,11 +278,10 @@ const BookingPage: React.FC = () => {
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
                               formData.building === b
                                 ? "border-zinc-900 bg-zinc-50"
-                                : "border-zinc-200 hover:border-zinc-300"
+                                : "border-zinc-200 hover:border-zinc-400"
                             }`}
                           >
                             <div className="font-medium text-zinc-900">{b}</div>
-                            <div className="text-sm text-zinc-500 mt-1">Guided Tour</div>
                           </button>
                         ))}
                       </div>
@@ -261,21 +289,17 @@ const BookingPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        <CalendarIcon className="inline w-4 h-4 mr-1 text-zinc-400" />
                         Date
                       </label>
                       <select
                         name="date"
                         value={formData.date}
                         onChange={handleChange}
-                        className="w-full p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow bg-white"
+                        className="w-full rounded-xl border border-zinc-200 p-3 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
                       >
                         {availableDates.map((d) => (
-                          <option
-                            key={d.date}
-                            value={d.date}
-                            disabled={d.disabled}
-                            style={d.disabled ? { color: "#94a3b8" } : {}}
-                          >
+                          <option key={d.date} value={d.date} disabled={d.disabled}>
                             {d.label}{d.labelSuffix}
                           </option>
                         ))}
@@ -284,55 +308,52 @@ const BookingPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        Time{" "}
-                        {isLoadingSlots && (
-                          <span className="text-zinc-400 text-xs ml-2">
-                            (Loading availability...)
-                          </span>
-                        )}
+                        <Clock className="inline w-4 h-4 mr-1 text-zinc-400" />
+                        Time
                       </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {TIME_SLOTS.map((t) => {
-                          const isTaken = takenSlots.includes(t);
-                          const isToday = formData.date === format(today, "yyyy-MM-dd");
-                          const slotHour = parseInt(t.split(":")[0], 10);
-                          const isPassedToday = isToday && slotHour <= currentHour;
-                          const localDate = parseLocalDate(formData.date);
-                          const isSaturdayEvening = isSaturday(localDate) && t === "16:00";
-                          const isDisabled = isTaken || isPassedToday || isSaturdayEvening;
+                      {isLoadingSlots ? (
+                        <div className="text-sm text-zinc-400 py-4">Loading available times...</div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-2">
+                          {TIME_SLOTS.map((slot) => {
+                            const isTaken = takenSlots.includes(slot);
+                            const isToday = formData.date === format(today, "yyyy-MM-dd");
+                            const slotHour = parseInt(slot.split(":")[0], 10);
+                            const isPast = isToday && slotHour <= currentHour;
+                            const localDate = parseLocalDate(formData.date);
+                            const isSatEve = isSaturday(localDate) && slot === "16:00";
+                            const isDisabled = isTaken || isPast || isSatEve;
 
-                          return (
-                            <button
-                              key={t}
-                              type="button"
-                              disabled={isDisabled}
-                              onClick={() =>
-                                setFormData((prev) => ({ ...prev, time: t }))
-                              }
-                              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
-                                isDisabled
-                                  ? "bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed"
-                                  : formData.time === t
-                                  ? "bg-zinc-900 text-white border-zinc-900"
-                                  : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
-                              }`}
-                            >
-                              {t}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            return (
+                              <button
+                                key={slot}
+                                type="button"
+                                disabled={isDisabled}
+                                onClick={() => setFormData((prev) => ({ ...prev, time: slot }))}
+                                className={`py-2 rounded-lg text-sm font-medium transition-all ${
+                                  formData.time === slot
+                                    ? "bg-zinc-900 text-white"
+                                    : isDisabled
+                                    ? "bg-zinc-100 text-zinc-300 cursor-not-allowed line-through"
+                                    : "bg-zinc-50 text-zinc-700 hover:bg-zinc-200 border border-zinc-200"
+                                }`}
+                              >
+                                {slot}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="pt-6 flex justify-end">
-                      <button
-                        onClick={() => setStep(2)}
-                        disabled={!formData.time}
-                        className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Continue to Details
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={!formData.time}
+                      onClick={() => setStep(2)}
+                      className="w-full bg-zinc-900 text-white rounded-xl p-3 font-medium disabled:opacity-40 hover:bg-zinc-700 transition-colors"
+                    >
+                      Continue to Details
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -341,108 +362,80 @@ const BookingPage: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
                 >
                   <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-zinc-400" />
                     Your Details
                   </h2>
 
-                  <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Booking summary */}
+                  <div className="bg-zinc-50 rounded-xl p-4 mb-6 border border-zinc-200 text-sm">
+                    <div className="flex items-center gap-2 text-zinc-600 mb-1">
+                      <MapPin className="w-4 h-4" /> {formData.building}
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-600">
+                      <Clock className="w-4 h-4" />
+                      {format(parseLocalDate(formData.date), "MMMM d, yyyy")} at {formData.time}
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-1">
-                        Full Name
+                        <User className="inline w-4 h-4 mr-1 text-zinc-400" /> Full Name
                       </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-5 w-5 text-zinc-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="name"
-                          required
-                          value={formData.name}
-                          onChange={handleChange}
-                          className="block w-full pl-10 p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow"
-                          placeholder="Jane Doe"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-zinc-200 p-3 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                        placeholder="Jane Smith"
+                      />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-1">
-                        Email Address
+                        <Mail className="inline w-4 h-4 mr-1 text-zinc-400" /> Email
                       </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail className="h-5 w-5 text-zinc-400" />
-                        </div>
-                        <input
-                          type="email"
-                          name="email"
-                          required
-                          value={formData.email}
-                          onChange={handleChange}
-                          className="block w-full pl-10 p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow"
-                          placeholder="jane@example.com"
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        We'll send your calendar invitation here.
-                      </p>
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-zinc-200 p-3 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                        placeholder="jane@example.com"
+                      />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-1">
-                        Phone Number (Optional)
+                        <Phone className="inline w-4 h-4 mr-1 text-zinc-400" /> Phone (optional)
                       </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Phone className="h-5 w-5 text-zinc-400" />
-                        </div>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className="block w-full pl-10 p-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-shadow"
-                          placeholder="(555) 123-4567"
-                        />
-                      </div>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-zinc-200 p-3 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                        placeholder="416-555-0100"
+                      />
                     </div>
 
-                    <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 mt-6">
-                      <h3 className="text-sm font-medium text-zinc-900 mb-2">
-                        Booking Summary
-                      </h3>
-                      <div className="text-sm text-zinc-600 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" /> {formData.building}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />{" "}
-                          {format(parseLocalDate(formData.date), "MMMM d, yyyy")}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" /> {formData.time}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 flex justify-between">
+                    <div className="flex gap-3 pt-2">
                       <button
                         type="button"
                         onClick={() => setStep(1)}
-                        className="text-zinc-600 px-6 py-3 rounded-xl font-medium hover:bg-zinc-100 transition-colors"
+                        className="flex-1 border border-zinc-200 rounded-xl p-3 font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
                       >
                         Back
                       </button>
                       <button
                         type="submit"
-                        disabled={isSubmitting || !formData.name || !formData.email}
-                        className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        disabled={isSubmitting}
+                        className="flex-1 bg-zinc-900 text-white rounded-xl p-3 font-medium disabled:opacity-40 hover:bg-zinc-700 transition-colors"
                       >
-                        {isSubmitting ? "Confirming..." : "Confirm Booking"}
+                        {isSubmitting ? copy.confirmingButton : copy.confirmButton}
                       </button>
                     </div>
                   </form>
@@ -459,29 +452,28 @@ const BookingPage: React.FC = () => {
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <h2 className="text-2xl font-bold text-zinc-900 mb-2">
-                    Booking Confirmed!
+                    {copy.successTitle}
                   </h2>
                   <p className="text-zinc-600 mb-8 max-w-md mx-auto">
-                    Thank you, {formData.name}. Your tour at {formData.building} is
-                    scheduled for {format(parseLocalDate(formData.date), "MMMM d, yyyy")} at{" "}
-                    {formData.time}.
+                    {copy.successBody(
+                      formData.name,
+                      formData.building,
+                      format(parseLocalDate(formData.date), "MMMM d, yyyy"),
+                      formData.time
+                    )}
                   </p>
                   <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200 mb-8 text-left max-w-sm mx-auto">
                     <p className="text-sm text-zinc-600 mb-4">
                       We've sent a confirmation email to{" "}
-                      <strong>{formData.email}</strong> with a calendar invitation
-                      attached.
+                      <strong>{formData.email}</strong> with a calendar invitation attached.
                     </p>
-                    <p className="text-sm text-zinc-500">
-                      Please arrive 5 minutes before your scheduled time. The admin
-                      team has also been notified.
-                    </p>
+                    <p className="text-sm text-zinc-500">{copy.arrivalNote}</p>
                   </div>
                   <button
                     onClick={resetForm}
                     className="text-zinc-900 font-medium hover:underline"
                   >
-                    Book another tour
+                    {copy.resetButton}
                   </button>
                 </motion.div>
               )}

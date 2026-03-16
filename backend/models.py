@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -9,14 +9,14 @@ class Lead(Base):
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Core Prospect Info (This is what we will search against to merge bookings!)
+    # Core Prospect Info
     prospect_name = Column(String, index=True, nullable=True)
     email = Column(String, index=True, nullable=True)
     phone = Column(String, nullable=True)
     
     # Source Info
-    source = Column(String, nullable=True)               # e.g., "RentSync", "Website Booking"
-    integration_source = Column(String, nullable=True)   # e.g., "Zumper"
+    source = Column(String, nullable=True)
+    integration_source = Column(String, nullable=True)
     
     # Property Info
     inquiry_date = Column(DateTime, nullable=True)
@@ -30,7 +30,6 @@ class Lead(Base):
     promotion = Column(String, nullable=True)
     
     # Status
-    # Standard flow: New -> Tour Scheduled -> Application -> Tenant
     status = Column(String, default="New", index=True)
     
     # Debugging Columns
@@ -38,10 +37,7 @@ class Lead(Base):
     debug_2 = Column(Text, nullable=True)
 
     # --- RELATIONSHIPS ---
-    # One Lead can have multiple Bookings.
     bookings = relationship("Booking", back_populates="lead")
-    
-    # NEW: One Lead becomes exactly one Tenant profile (uselist=False makes it 1-to-1)
     tenant = relationship("Tenant", back_populates="lead", uselist=False)
 
 
@@ -54,45 +50,55 @@ class Booking(Base):
     # --- FOREIGN KEY ---
     lead_id = Column(Integer, ForeignKey("leads.id")) 
     
-    # Tour Details
+    # Tour/Meeting Details
     building = Column(String, index=True)
-    tour_date = Column(String, index=True) # e.g., '2026-03-05'
-    tour_time = Column(String)             # e.g., '14:00'
+    tour_date = Column(String, index=True)  # e.g., '2026-03-05'
+    tour_time = Column(String)              # e.g., '14:00'
     
-    status = Column(String, default="Scheduled") # Can be Scheduled, Cancelled, Completed
+    status = Column(String, default="Scheduled")  # pending, confirmed, cancelled, Completed
 
-    # NEW: Granular analytics for the boss. Tracks exactly what happened after THIS specific tour.
-    tour_outcome = Column(String, nullable=True) # e.g., "Converted to Tenant", "Not Interested", "No Show"
+    # Type: 'tour' (default) or 'meeting'
+    # Tours show in analytics, meetings do not.
+    # Both block the same time slot to prevent double-booking.
+    booking_type = Column(String, default="tour", nullable=False)
+
+    # Outcome — only relevant for tours
+    tour_outcome = Column(String, nullable=True)  # "Converted to Tenant", "No Show"
 
     # --- RELATIONSHIPS ---
     lead = relationship("Lead", back_populates="bookings")
 
 
-# --- NEW: FUTURE-PROOF TENANT TABLE ---
-# This serves the boss's Monday deadline for "analytics" but sets you up for the Tenant Portal later.
 class Tenant(Base):
     __tablename__ = "tenants"
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # --- FOREIGN KEY ---
-    # unique=True ensures one Lead can't accidentally spawn multiple tenant portal accounts
     lead_id = Column(Integer, ForeignKey("leads.id"), unique=True, index=True)
     
-    # --- FUTURE PORTAL FIELDS (Leave nullable for Monday's quick fix) ---
-    user_account_id = Column(Integer, nullable=True) # Future link to Auth/Users table for login
-    lease_status = Column(String, default="Pending Signature") # Future: Active, Notice Given, Past
+    user_account_id = Column(Integer, nullable=True)
+    lease_status = Column(String, default="Pending Signature")
     unit_number = Column(String, nullable=True)
     
     # --- RELATIONSHIPS ---
     lead = relationship("Lead", back_populates="tenant")
 
 
-# --- TABLE FOR BLOCKING DATES ---
 class BlockedDate(Base):
     __tablename__ = "blocked_dates"
     
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(String, unique=True, index=True) # Format: YYYY-MM-DD
-    reason = Column(String, nullable=True)         # Optional: e.g., "Holiday", "Office Closed"
+    date = Column(String, unique=True, index=True)  # Format: YYYY-MM-DD
+    reason = Column(String, nullable=True)
+
+
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    username = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, default="admin")
+    is_active = Column(Boolean, default=True)

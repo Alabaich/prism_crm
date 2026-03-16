@@ -25,15 +25,17 @@ export interface User {
 
 export interface Booking {
   id: number;
-  name: string;
-  email: string;
-  phone?: string;
   building: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'Completed' | 'Scheduled'; 
-  tour_outcome?: string; 
-  source?: string;       
+  status: string;
+  tour_outcome?: string;
+  booking_type?: 'tour' | 'meeting';   // <-- ADD THIS LINE
+  created_at: string;
+  name: string;
+  email: string;
+  phone?: string;
+  source?: string;
 }
 
 export interface BlockedDate {

@@ -7,20 +7,17 @@ import {
   User,
   Mail,
   Phone,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Tag,
   Home,
   CheckCircle2,
   UserX,
   CalendarIcon,
-    Search, 
-  X,      
+  Search,
+  X,
+  Coffee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// Inline Header to ensure compilation in standalone mode
 const Header: React.FC<{ currentView?: string }> = ({ currentView }) => (
   <header className="bg-white border-b border-zinc-200 px-6 py-4 flex items-center justify-between shadow-sm">
     <div className="font-bold text-zinc-800 text-lg">
@@ -41,20 +38,27 @@ interface Booking {
   date: string;
   time: string;
   status: "pending" | "confirmed" | "cancelled" | "Completed";
-  tour_outcome?: string; // NEW: Added to track if they became a tenant
+  tour_outcome?: string;
+  booking_type?: "tour" | "meeting";
   created_at: string;
   source?: string;
 }
 
+type TypeFilter = "tour" | "all";
+
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("tour");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<number | null>(null);
 
   const filteredBookings = bookings.filter((b) => {
+    // Type filter — "tour" hides meetings, "all" shows everything
+    if (typeFilter === "tour" && b.booking_type === "meeting") return false;
+
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -71,7 +75,6 @@ const AdminPage: React.FC = () => {
 
   const fetchBookings = async () => {
     try {
-      // Fetching from the separated admin endpoint
       const res = await fetch("/admin/bookings/");
       if (!res.ok) throw new Error("Failed to fetch bookings");
       const data = await res.json();
@@ -85,20 +88,18 @@ const AdminPage: React.FC = () => {
 
   const handleStatusChange = async (
     id: number,
-    status: "confirmed" | "cancelled" | "Completed",
+    status: "confirmed" | "cancelled" | "Completed"
   ) => {
     setUpdating(id);
     try {
-      // Updating status via the admin endpoint
       const res = await fetch(`/admin/bookings/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error("Failed to update status");
-
       setBookings((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status } : b)),
+        prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
     } catch (err: any) {
       alert(err.message);
@@ -107,7 +108,6 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  // NEW: Handler for the Trojan Horse conversion button
   const handleOutcomeChange = async (id: number, outcome: string) => {
     setUpdating(id);
     try {
@@ -117,14 +117,10 @@ const AdminPage: React.FC = () => {
         body: JSON.stringify({ tour_outcome: outcome }),
       });
       if (!res.ok) throw new Error("Failed to update outcome");
-
-      // Update the local state to show it was converted, and automatically mark status as Completed
       setBookings((prev) =>
         prev.map((b) =>
-          b.id === id
-            ? { ...b, tour_outcome: outcome, status: "Completed" }
-            : b,
-        ),
+          b.id === id ? { ...b, tour_outcome: outcome, status: "Completed" } : b
+        )
       );
     } catch (err: any) {
       alert(err.message);
@@ -162,47 +158,75 @@ const AdminPage: React.FC = () => {
           <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
-                Tours Dashboard
+                Tours & Bookings
               </h1>
               <p className="text-slate-500 mt-1">
-                Manage upcoming tours for 80/100 Bond St E.
+                Manage tours and meetings for 80/100 Bond St E.
               </p>
             </div>
 
-            {/* 👇 Search bar */}
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search by name, email, building..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition text-sm bg-white w-72 shadow-sm"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 flex items-center gap-2">
-                Total Bookings
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
-                  {filteredBookings.length}
-                </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, building..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition text-sm bg-white w-72 shadow-sm"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => navigate("/booking")}
-                className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl border border-zinc-700 shadow-sm text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
-              >
-                <CalendarIcon className="w-4 h-4" />
-                Book a Tour
-              </button>
+
+              <div className="flex items-center gap-3">
+                {/* Type filter toggle */}
+                <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                  <button
+                    onClick={() => setTypeFilter("tour")}
+                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${
+                      typeFilter === "tour"
+                        ? "bg-zinc-900 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Tours
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter("all")}
+                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${
+                      typeFilter === "all"
+                        ? "bg-zinc-900 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+
+                {/* Count badge */}
+                <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 flex items-center gap-2">
+                  {typeFilter === "tour" ? "Tours" : "Total"}
+                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                    {filteredBookings.length}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => navigate("/booking")}
+                  className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl border border-zinc-700 shadow-sm text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  Book a Tour
+                </button>
+              </div>
             </div>
           </div>
 
@@ -214,9 +238,9 @@ const AdminPage: React.FC = () => {
                     <th className="px-6 py-4">Date & Time</th>
                     <th className="px-6 py-4">Building</th>
                     <th className="px-6 py-4">Visitor Details</th>
+                    <th className="px-6 py-4">Type</th>
                     <th className="px-6 py-4">Source</th>
                     <th className="px-6 py-4">Status</th>
-                    {/* NEW: Outcome Column Header */}
                     <th className="px-6 py-4">Outcome</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
@@ -225,7 +249,7 @@ const AdminPage: React.FC = () => {
                   {filteredBookings.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="px-6 py-12 text-center text-slate-500 italic"
                       >
                         {searchTerm
@@ -234,179 +258,214 @@ const AdminPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredBookings.map((booking) => (
-                      <tr
-                        key={booking.id}
-                        className="hover:bg-slate-50/80 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-800 flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-blue-500" />
-                            {booking.date
-                              ? format(
-                                  new Date(booking.date + "T00:00:00"),
-                                  "MMM d, yyyy",
-                                )
-                              : "No Date"}
-                          </div>
-                          <div className="text-slate-500 mt-1.5 flex items-center gap-2 font-medium">
-                            <Clock className="w-4 h-4 text-amber-500" />
-                            {booking.time || "No Time"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-slate-700 font-medium">
-                            <MapPin className="w-4 h-4 text-emerald-500" />
-                            {booking.building}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-800 flex items-center gap-2">
-                            <User className="w-4 h-4 text-slate-400" />
-                            {booking.name}
-                          </div>
-                          <div className="text-slate-500 mt-1.5 flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-slate-400" />
-                            <a
-                              href={`mailto:${booking.email}`}
-                              className="hover:text-blue-600 transition-colors"
-                            >
-                              {booking.email}
-                            </a>
-                          </div>
-                          {booking.phone && (
+                    filteredBookings.map((booking) => {
+                      const isMeeting = booking.booking_type === "meeting";
+                      return (
+                        <tr
+                          key={booking.id}
+                          className={`hover:bg-slate-50/80 transition-colors ${
+                            isMeeting ? "bg-amber-50/30" : ""
+                          }`}
+                        >
+                          {/* Date & Time */}
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-slate-800 flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-blue-500" />
+                              {booking.date
+                                ? format(
+                                    new Date(booking.date + "T00:00:00"),
+                                    "MMM d, yyyy"
+                                  )
+                                : "No Date"}
+                            </div>
+                            <div className="text-slate-500 mt-1.5 flex items-center gap-2 font-medium">
+                              <Clock className="w-4 h-4 text-amber-500" />
+                              {booking.time || "No Time"}
+                            </div>
+                          </td>
+
+                          {/* Building */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 text-slate-700 font-medium">
+                              <MapPin className="w-4 h-4 text-emerald-500" />
+                              {booking.building}
+                            </div>
+                          </td>
+
+                          {/* Visitor Details */}
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-slate-800 flex items-center gap-2">
+                              <User className="w-4 h-4 text-slate-400" />
+                              {booking.name}
+                            </div>
                             <div className="text-slate-500 mt-1.5 flex items-center gap-2">
-                              <Phone className="w-4 h-4 text-slate-400" />
+                              <Mail className="w-4 h-4 text-slate-400" />
                               <a
-                                href={`tel:${booking.phone}`}
+                                href={`mailto:${booking.email}`}
                                 className="hover:text-blue-600 transition-colors"
                               >
-                                {booking.phone}
+                                {booking.email}
                               </a>
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {(!booking.source ||
-                            booking.source !== "Tour Booking App") && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              <Tag className="w-3.5 h-3.5" />
-                              {booking.source || "Direct / Website"}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
-                              booking.status === "confirmed" ||
-                              booking.status === "Completed"
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                : booking.status === "cancelled"
+                            {booking.phone && (
+                              <div className="text-slate-500 mt-1.5 flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-slate-400" />
+                                <a
+                                  href={`tel:${booking.phone}`}
+                                  className="hover:text-blue-600 transition-colors"
+                                >
+                                  {booking.phone}
+                                </a>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Type badge */}
+                          <td className="px-6 py-4">
+                            {isMeeting ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Coffee className="w-3.5 h-3.5" />
+                                Meeting
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                Tour
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Source */}
+                          <td className="px-6 py-4">
+                            {(!booking.source ||
+                              booking.source !== "Tour Booking App") && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <Tag className="w-3.5 h-3.5" />
+                                {booking.source || "Direct / Website"}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                                booking.status === "confirmed" ||
+                                booking.status === "Completed"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : booking.status === "cancelled"
                                   ? "bg-red-100 text-red-800 border border-red-200"
                                   : "bg-amber-100 text-amber-800 border border-amber-200"
-                            }`}
-                          >
-                            {(booking.status === "confirmed" ||
-                              booking.status === "Completed") && (
-                              <CheckCircle className="w-3.5 h-3.5" />
-                            )}
-                            {booking.status === "cancelled" && (
-                              <XCircle className="w-3.5 h-3.5" />
-                            )}
-                            {booking.status === "pending" && (
-                              <AlertCircle className="w-3.5 h-3.5" />
-                            )}
-                            {booking.status}
-                          </span>
-                        </td>
-
-                        {/* NEW: The Outcome Column Display Logic */}
-                        <td className="px-6 py-4">
-                          {booking.tour_outcome ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                              <Home className="w-3.5 h-3.5" />
-                              {booking.tour_outcome}
-                            </span>
-                          ) : booking.status === "confirmed" ||
-                            booking.status === "Completed" ? (
-                            <button
-                              onClick={() =>
-                                handleOutcomeChange(
-                                  booking.id,
-                                  "Converted to Tenant",
-                                )
-                              }
-                              disabled={updating === booking.id}
-                              className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+                              }`}
                             >
-                              <Home className="w-3.5 h-3.5" />
-                              Convert
-                            </button>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic">
-                              Awaiting Tour
+                              {booking.status === "cancelled" ? (
+                                <X className="w-3 h-3" />
+                              ) : booking.status === "confirmed" ||
+                                booking.status === "Completed" ? (
+                                <CheckCircle2 className="w-3 h-3" />
+                              ) : null}
+                              {booking.status}
                             </span>
-                          )}
-                        </td>
+                          </td>
 
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
-                            {booking.status !== "confirmed" &&
-                              booking.status !== "Completed" && (
-                                <button
-                                  onClick={() =>
-                                    handleStatusChange(booking.id, "confirmed")
-                                  }
-                                  disabled={updating === booking.id}
-                                  className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
-                                >
-                                  Confirm
-                                </button>
-                              )}
-
-                            {booking.status === "confirmed" &&
-                              !booking.tour_outcome && (
-                                <>
-                                  <button
-                                    onClick={() =>
-                                      handleStatusChange(
-                                        booking.id,
-                                        "Completed",
-                                      )
-                                    }
-                                    disabled={updating === booking.id}
-                                    className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />{" "}
-                                    Showed Up
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleOutcomeChange(booking.id, "No Show")
-                                    }
-                                    disabled={updating === booking.id}
-                                    className="text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
-                                  >
-                                    <UserX className="w-3.5 h-3.5" /> No Show
-                                  </button>
-                                </>
-                              )}
-
-                            {booking.status !== "cancelled" && (
+                          {/* Outcome — tours only */}
+                          <td className="px-6 py-4">
+                            {isMeeting ? (
+                              <span className="text-slate-400 text-xs italic">—</span>
+                            ) : booking.tour_outcome ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                <Home className="w-3.5 h-3.5" />
+                                {booking.tour_outcome}
+                              </span>
+                            ) : booking.status === "confirmed" ||
+                              booking.status === "Completed" ? (
                               <button
                                 onClick={() =>
-                                  handleStatusChange(booking.id, "cancelled")
+                                  handleOutcomeChange(
+                                    booking.id,
+                                    "Converted to Tenant"
+                                  )
                                 }
                                 disabled={updating === booking.id}
-                                className="text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
+                                className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
                               >
-                                Cancel
+                                <Home className="w-3.5 h-3.5" />
+                                Convert
                               </button>
+                            ) : (
+                              <span className="text-slate-400 text-xs italic">
+                                Awaiting Tour
+                              </span>
                             )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+
+                          {/* Actions — outcome buttons only for tours */}
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2 flex-wrap">
+                              {/* Confirm — both */}
+                              {booking.status !== "confirmed" &&
+                                booking.status !== "Completed" && (
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(booking.id, "confirmed")
+                                    }
+                                    disabled={updating === booking.id}
+                                    className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
+                                  >
+                                    Confirm
+                                  </button>
+                                )}
+
+                              {/* Showed Up + No Show — tours only */}
+                              {!isMeeting &&
+                                booking.status === "confirmed" &&
+                                !booking.tour_outcome && (
+                                  <>
+                                    <button
+                                      onClick={() =>
+                                        handleStatusChange(
+                                          booking.id,
+                                          "Completed"
+                                        )
+                                      }
+                                      disabled={updating === booking.id}
+                                      className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                                      Showed Up
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleOutcomeChange(
+                                          booking.id,
+                                          "No Show"
+                                        )
+                                      }
+                                      disabled={updating === booking.id}
+                                      className="text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+                                    >
+                                      <UserX className="w-3.5 h-3.5" /> No Show
+                                    </button>
+                                  </>
+                                )}
+
+                              {/* Cancel — both */}
+                              {booking.status !== "cancelled" && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(booking.id, "cancelled")
+                                  }
+                                  disabled={updating === booking.id}
+                                  className="text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
