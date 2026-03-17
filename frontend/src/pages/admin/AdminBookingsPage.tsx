@@ -45,11 +45,13 @@ interface Booking {
 }
 
 type TypeFilter = "tour" | "all";
+type StatusFilter = "active" | "all";
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("tour");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,6 +60,15 @@ const AdminPage: React.FC = () => {
   const filteredBookings = bookings.filter((b) => {
     // Type filter — "tour" hides meetings, "all" shows everything
     if (typeFilter === "tour" && b.booking_type === "meeting") return false;
+
+    // Status filter — "active" hides cancelled and past bookings
+    if (statusFilter === "active") {
+      if (b.status === "cancelled") return false;
+      const bookingDate = new Date(b.date + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (bookingDate < today) return false;
+    }
 
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
@@ -186,28 +197,28 @@ const AdminPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Type filter toggle */}
-                <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                  <button
-                    onClick={() => setTypeFilter("tour")}
-                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${typeFilter === "tour"
-                        ? "bg-zinc-900 text-white"
-                        : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    Tours
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter("all")}
-                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${typeFilter === "all"
-                        ? "bg-zinc-900 text-white"
-                        : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    All
-                  </button>
-                </div>
+              <div className="flex items-center gap-4">
+                {/* Tours only checkbox */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={typeFilter === "tour"}
+                    onChange={(e) => setTypeFilter(e.target.checked ? "tour" : "all")}
+                    className="w-4 h-4 rounded border-slate-300 accent-zinc-900 cursor-pointer"
+                  />
+                  <span className="text-sm font-semibold text-slate-700">Show only tours</span>
+                </label>
+
+                {/* Active only checkbox */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={statusFilter === "active"}
+                    onChange={(e) => setStatusFilter(e.target.checked ? "active" : "all")}
+                    className="w-4 h-4 rounded border-slate-300 accent-zinc-900 cursor-pointer"
+                  />
+                  <span className="text-sm font-semibold text-slate-700">Show only active</span>
+                </label>
 
                 {/* Count badge */}
                 <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -252,6 +263,8 @@ const AdminPage: React.FC = () => {
                       >
                         {searchTerm
                           ? `No bookings match "${searchTerm}".`
+                          : statusFilter === "active"
+                          ? "No active bookings. Click 'All' to see cancelled ones."
                           : "No bookings found."}
                       </td>
                     </tr>
@@ -261,8 +274,9 @@ const AdminPage: React.FC = () => {
                       return (
                         <tr
                           key={booking.id}
-                          className={`hover:bg-slate-50/80 transition-colors ${isMeeting ? "bg-amber-50/30" : ""
-                            }`}
+                          className={`hover:bg-slate-50/80 transition-colors ${
+                            isMeeting ? "bg-amber-50/30" : ""
+                          }`}
                         >
                           {/* Date & Time */}
                           <td className="px-6 py-4">
@@ -270,9 +284,9 @@ const AdminPage: React.FC = () => {
                               <Calendar className="w-4 h-4 text-blue-500" />
                               {booking.date
                                 ? format(
-                                  new Date(booking.date + "T00:00:00"),
-                                  "MMM d, yyyy"
-                                )
+                                    new Date(booking.date + "T00:00:00"),
+                                    "MMM d, yyyy"
+                                  )
                                 : "No Date"}
                             </div>
                             <div className="text-slate-500 mt-1.5 flex items-center gap-2 font-medium">
@@ -336,23 +350,24 @@ const AdminPage: React.FC = () => {
                           <td className="px-6 py-4">
                             {(!booking.source ||
                               booking.source !== "Tour Booking App") && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                  <Tag className="w-3.5 h-3.5" />
-                                  {booking.source || "Direct / Website"}
-                                </span>
-                              )}
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <Tag className="w-3.5 h-3.5" />
+                                {booking.source || "Direct / Website"}
+                              </span>
+                            )}
                           </td>
 
                           {/* Status */}
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${booking.status === "confirmed" ||
-                                  booking.status === "Completed"
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                                booking.status === "confirmed" ||
+                                booking.status === "Completed"
                                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                   : booking.status === "cancelled"
-                                    ? "bg-red-100 text-red-800 border border-red-200"
-                                    : "bg-amber-100 text-amber-800 border border-amber-200"
-                                }`}
+                                  ? "bg-red-100 text-red-800 border border-red-200"
+                                  : "bg-amber-100 text-amber-800 border border-amber-200"
+                              }`}
                             >
                               {booking.status === "cancelled" ? (
                                 <X className="w-3 h-3" />
@@ -395,7 +410,7 @@ const AdminPage: React.FC = () => {
                             )}
                           </td>
 
-                          {/* Actions — outcome buttons only for tours */}
+                          {/* Actions */}
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 flex-wrap">
                               {/* Confirm — both */}
