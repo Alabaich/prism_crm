@@ -191,21 +191,19 @@ const AdminPage: React.FC = () => {
                 <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                   <button
                     onClick={() => setTypeFilter("tour")}
-                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${
-                      typeFilter === "tour"
+                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${typeFilter === "tour"
                         ? "bg-zinc-900 text-white"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     Tours
                   </button>
                   <button
                     onClick={() => setTypeFilter("all")}
-                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${
-                      typeFilter === "all"
+                    className={`px-4 py-2.5 text-sm font-bold transition-colors ${typeFilter === "all"
                         ? "bg-zinc-900 text-white"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     All
                   </button>
@@ -231,7 +229,7 @@ const AdminPage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-xs">
                   <tr>
@@ -263,9 +261,8 @@ const AdminPage: React.FC = () => {
                       return (
                         <tr
                           key={booking.id}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            isMeeting ? "bg-amber-50/30" : ""
-                          }`}
+                          className={`hover:bg-slate-50/80 transition-colors ${isMeeting ? "bg-amber-50/30" : ""
+                            }`}
                         >
                           {/* Date & Time */}
                           <td className="px-6 py-4">
@@ -273,9 +270,9 @@ const AdminPage: React.FC = () => {
                               <Calendar className="w-4 h-4 text-blue-500" />
                               {booking.date
                                 ? format(
-                                    new Date(booking.date + "T00:00:00"),
-                                    "MMM d, yyyy"
-                                  )
+                                  new Date(booking.date + "T00:00:00"),
+                                  "MMM d, yyyy"
+                                )
                                 : "No Date"}
                             </div>
                             <div className="text-slate-500 mt-1.5 flex items-center gap-2 font-medium">
@@ -339,24 +336,23 @@ const AdminPage: React.FC = () => {
                           <td className="px-6 py-4">
                             {(!booking.source ||
                               booking.source !== "Tour Booking App") && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                <Tag className="w-3.5 h-3.5" />
-                                {booking.source || "Direct / Website"}
-                              </span>
-                            )}
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                  <Tag className="w-3.5 h-3.5" />
+                                  {booking.source || "Direct / Website"}
+                                </span>
+                              )}
                           </td>
 
                           {/* Status */}
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
-                                booking.status === "confirmed" ||
-                                booking.status === "Completed"
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${booking.status === "confirmed" ||
+                                  booking.status === "Completed"
                                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                   : booking.status === "cancelled"
-                                  ? "bg-red-100 text-red-800 border border-red-200"
-                                  : "bg-amber-100 text-amber-800 border border-amber-200"
-                              }`}
+                                    ? "bg-red-100 text-red-800 border border-red-200"
+                                    : "bg-amber-100 text-amber-800 border border-amber-200"
+                                }`}
                             >
                               {booking.status === "cancelled" ? (
                                 <X className="w-3 h-3" />

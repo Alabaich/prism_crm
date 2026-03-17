@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import type { FC } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
@@ -332,7 +332,7 @@ const AdminPage: FC = () => {
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 shadow-sm bg-white">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-200 text-[10px] uppercase text-slate-400 font-black tracking-widest">
