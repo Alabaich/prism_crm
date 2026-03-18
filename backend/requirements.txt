@@ -10,3 +10,5 @@ imap-tools
 apscheduler
 bcrypt
 PyJWT
+pymupdf
+reportlab 
