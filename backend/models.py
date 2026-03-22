@@ -140,6 +140,7 @@ class Doc(Base):
                                                      # 'signed_application' | 'signed_lease' |
                                                      # 'maintenance' | 'inspection' |
                                                      # 'email_template' | 'other'
+    metadata_analysis = Column(JSON, nullable=True)
 
     uploaded_by = Column(Integer, ForeignKey("admin_users.id"), nullable=True)  # null if applicant
 
@@ -215,6 +216,7 @@ class Application(Base):
     income_proof_id    = Column(Integer, ForeignKey("docs.id"), nullable=True)
     signed_form_410_id = Column(Integer, ForeignKey("docs.id"), nullable=True)
     signed_consent_id  = Column(Integer, ForeignKey("docs.id"), nullable=True)
+    landlord_reference_id = Column(Integer, ForeignKey("docs.id"), nullable=True)
 
     # --- Status & Approval ---
     # Pending → Approved → Tenant created
@@ -231,6 +233,46 @@ class Application(Base):
     income_proof     = relationship("Doc", foreign_keys=[income_proof_id])
     signed_form_410  = relationship("Doc", foreign_keys=[signed_form_410_id])
     signed_consent   = relationship("Doc", foreign_keys=[signed_consent_id])
+    landlord_reference = relationship("Doc", foreign_keys=[landlord_reference_id])
+    # --- Applicant #1 Personal ---
+    date_of_birth = Column(String, nullable=True)
+    sin_number = Column(String, nullable=True)         # Optional — sensitive
+    drivers_license = Column(String, nullable=True)
+ 
+    # --- Applicant #1 Employment Extras ---
+    business_address = Column(String, nullable=True)
+    business_phone = Column(String, nullable=True)
+    supervisor_name = Column(String, nullable=True)
+ 
+    # --- Applicant #1 Prior Employment Extras ---
+    prior_business_address = Column(String, nullable=True)
+    prior_business_phone = Column(String, nullable=True)
+    prior_supervisor = Column(String, nullable=True)
+    prior_salary = Column(String, nullable=True)
+ 
+    # --- Banking ---
+    bank_name = Column(String, nullable=True)
+    bank_branch = Column(String, nullable=True)
+    bank_address = Column(String, nullable=True)
+    chequing_account = Column(String, nullable=True)
+    savings_account = Column(String, nullable=True)
+ 
+    # --- Financial Obligations ---
+    # JSON array: [{ "to": "VISA", "amount": "200" }, ...]
+    financial_obligations = Column(JSON, nullable=True)
+ 
+    # --- Reference Extras ---
+    reference_1_address = Column(String, nullable=True)
+    reference_1_acquaintance = Column(String, nullable=True)
+    reference_1_occupation = Column(String, nullable=True)
+    reference_2_address = Column(String, nullable=True)
+    reference_2_acquaintance = Column(String, nullable=True)
+    reference_2_occupation = Column(String, nullable=True)
+ 
+    # --- Automobiles ---
+    # JSON array: [{ "make": "Toyota", "model": "Camry", "year": "2020", "licence": "ABC 123" }]
+    automobiles = Column(JSON, nullable=True)
+    ai_review = Column(JSON, nullable=True)
 
 
 # ==============================================================================

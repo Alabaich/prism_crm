@@ -12,6 +12,7 @@ export const AdminLayout: React.FC = () => {
     { path: '/admin/booking', label: 'Tours & Bookings' },
     { path: '/admin/analytics', label: 'Analytics' },
     { path: '/admin/calendar', label: 'Calendar' },
+    { path: '/admin/applications', label: 'Applications' }
   ];
 
   return (

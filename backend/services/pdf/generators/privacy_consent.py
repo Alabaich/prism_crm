@@ -2,6 +2,8 @@
 privacy_consent.py
 Generates a filled Privacy Consent (Schedule A) PDF using ReportLab.
 Also defines the signature coordinate map for stamping.
+
+Single-page document — both applicants sign at the bottom.
 """
 
 import io
@@ -17,34 +19,36 @@ logger = logging.getLogger("pdf.generators.privacy_consent")
 
 # =============================================================================
 # SIGNATURE COORDINATE MAP
-# One page document — both signers sign at the bottom of page 1.
+# Single page document. Signature blocks are near the bottom.
+# ReportLab builds top-down, signature area lands around y=640-690
+# in PDF coordinates (0,0 = bottom-left in PDF, but PyMuPDF uses top-left).
+#
+# With tighter spacing, the signature line is approximately at y=665
+# from the top in PyMuPDF coordinates.
+# Page = 1 (1-indexed for stamper which does page - 1)
 # =============================================================================
 
 SIGNATURE_COORDS = {
     "applicant_1": {
-        "page": 1,
-        "x": 72,
-        "y": 630,
+        "page": 1,       # 1-indexed → stamper does 1-1=0 → first page
+        "x": 58,
+        "y": 525,
         "width": 200,
-        "height": 50,
+        "height": 30,
         "label": "Applicant Signature"
     },
     "applicant_2": {
         "page": 1,
-        "x": 340,
-        "y": 630,
+        "x": 310,
+        "y": 525,
         "width": 200,
-        "height": 50,
+        "height": 30,
         "label": "Co-Applicant Signature"
     }
 }
 
 
 def get_signature_coords(signer_index: int) -> Dict[str, Any]:
-    """
-    Returns signature coordinates for a given signer.
-    signer_index: 0 = applicant 1, 1+ = co-applicants
-    """
     if signer_index == 0:
         return SIGNATURE_COORDS["applicant_1"]
     else:
@@ -58,66 +62,59 @@ def get_signature_coords(signer_index: int) -> Dict[str, Any]:
 def build_privacy_consent(data: Dict[str, Any]) -> bytes:
     """
     Generate a filled Privacy Consent (Schedule A) PDF.
-
-    Args:
-        data: dict with:
-            - prospect_name   str  (applicant #1 name)
-            - co_applicants   list (co-applicant names)
-            - building        str
-
-    Returns:
-        PDF as bytes
+    Designed to fit on a single page with tighter spacing.
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
-        rightMargin=0.75 * inch,
-        leftMargin=0.75 * inch,
-        topMargin=0.75 * inch,
-        bottomMargin=0.75 * inch,
+        rightMargin=0.6 * inch,
+        leftMargin=0.6 * inch,
+        topMargin=0.5 * inch,
+        bottomMargin=0.5 * inch,
     )
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         "Title", parent=styles["Heading1"],
-        fontSize=13, spaceAfter=6, textColor=colors.HexColor("#1e3a5f")
+        fontSize=12, spaceAfter=2, spaceBefore=0,
+        textColor=colors.HexColor("#1e3a5f")
     )
     heading_style = ParagraphStyle(
         "Heading", parent=styles["Heading2"],
-        fontSize=10, spaceAfter=4, spaceBefore=8,
+        fontSize=9, spaceAfter=2, spaceBefore=4,
         textColor=colors.HexColor("#1e3a5f")
     )
     body_style = ParagraphStyle(
         "Body", parent=styles["Normal"],
-        fontSize=9, spaceAfter=6, leading=14
+        fontSize=8, spaceAfter=3, leading=11
     )
     label_style = ParagraphStyle(
         "Label", parent=styles["Normal"],
-        fontSize=8, textColor=colors.gray, spaceAfter=1
+        fontSize=7, textColor=colors.gray, spaceAfter=1
     )
     small_style = ParagraphStyle(
         "Small", parent=styles["Normal"],
-        fontSize=8, textColor=colors.gray
+        fontSize=7, textColor=colors.gray
     )
     bold_style = ParagraphStyle(
         "Bold", parent=styles["Normal"],
-        fontSize=9, spaceAfter=6, leading=14,
+        fontSize=8, spaceAfter=3, leading=11,
         fontName="Helvetica-Bold"
     )
 
     story = []
 
-    # --- Header ---
+    # ── Header ──
     story.append(Paragraph('SCHEDULE "A"', title_style))
     story.append(Paragraph("Residential Rental Application Privacy Consent Form", heading_style))
     story.append(Paragraph(
         "(For one or two co-tenancy applicants — otherwise complete a separate application)",
         small_style
     ))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 4))
 
-    # --- Definitions ---
+    # ── Definitions ──
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1e3a5f")))
     story.append(Paragraph("Definitions: Information", heading_style))
     story.append(Paragraph(
@@ -150,7 +147,7 @@ def build_privacy_consent(data: Dict[str, Any]) -> bytes:
         body_style
     ))
 
-    # --- Collection, Use and Disclosure ---
+    # ── Collection, Use and Disclosure ──
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
     story.append(Paragraph("Collection, Use and Disclosure of Information", heading_style))
     story.append(Paragraph(
@@ -183,19 +180,22 @@ def build_privacy_consent(data: Dict[str, Any]) -> bytes:
     for i, consent in enumerate(consents, 1):
         story.append(Paragraph(f"{i}. {consent}", body_style))
 
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 4))
 
-    # --- Property being applied for ---
+    # ── Property ──
     if data.get("building"):
+        building_text = data.get("building") or ""
+        if data.get("unit_number"):
+            building_text += f", Unit {data['unit_number']}"
         story.append(Paragraph(
-            f"Property applied for: <b>{data.get('building')}</b>",
+            f"Property applied for: <b>{building_text}</b>",
             body_style
         ))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 2))
 
-    # --- Consent acknowledgement ---
+    # ── Consent acknowledgement ──
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1e3a5f")))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 4))
     story.append(Paragraph(
         "Please provide your consent by signing in the appropriate space below:",
         bold_style
@@ -204,29 +204,28 @@ def build_privacy_consent(data: Dict[str, Any]) -> bytes:
         "I have read, understood and voluntarily agree to the terms and conditions outlined above.",
         body_style
     ))
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 6))
 
-    # Get co-applicant name if available
+    # ── Signature blocks ──
     co_applicants = data.get("co_applicants") or []
-    co_name = co_applicants[0].get("name") if co_applicants else "Co-Applicant"
+    co_name = co_applicants[0].get("name") if co_applicants else ""
 
-    # --- Signature blocks ---
     story.append(Table([
         [
             [
                 Paragraph("Applicant Signature", label_style),
-                Spacer(1, 50),  # space for signature image
+                Spacer(1, 30),
                 HRFlowable(width="90%", thickness=0.5, color=colors.gray),
-                Spacer(1, 4),
+                Spacer(1, 3),
                 Paragraph(f"Print Name: {data.get('prospect_name') or '_______________'}", small_style),
                 Paragraph("Date (yyyy/mm/dd): _______________", small_style),
             ],
             [
                 Paragraph("Co-Applicant Signature", label_style),
-                Spacer(1, 50),  # space for signature image
+                Spacer(1, 30),
                 HRFlowable(width="90%", thickness=0.5, color=colors.gray),
-                Spacer(1, 4),
-                Paragraph(f"Print Name: {co_name if co_applicants else '_______________'}", small_style),
+                Spacer(1, 3),
+                Paragraph(f"Print Name: {co_name or '_______________'}", small_style),
                 Paragraph("Date (yyyy/mm/dd): _______________", small_style),
             ],
         ]
@@ -236,7 +235,7 @@ def build_privacy_consent(data: Dict[str, Any]) -> bytes:
         ("RIGHTPADDING", (0, 0), (-1, -1), 8),
     ])))
 
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 8))
     story.append(Paragraph(
         "MS.RTAC.20041201.v.en.4.1.1 — Rent Check Credit Bureau",
         small_style

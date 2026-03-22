@@ -13,6 +13,8 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminLayout } from './components/admin/AdminLayout';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import AdminCalendarPage from './pages/admin/AdminCalendarPage';
+import AdminApplicationsPage from './pages/admin/application/AdminApplicationsPage';
+import ApplicationPage from './pages/public/application/ApplicationPage';
 
 const AppContent: React.FC = () => {
   return (
@@ -23,6 +25,7 @@ const AppContent: React.FC = () => {
       <Route path="/booking" element={<BookingPage bookingType="tour" />} />
       <Route path="/meeting" element={<BookingPage bookingType="meeting" />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/pub_apply/:token" element={<ApplicationPage />} />
 
       {/* === PROTECTED ADMIN ROUTES === */}
       <Route element={<ProtectedRoute />}>
@@ -31,6 +34,8 @@ const AppContent: React.FC = () => {
           <Route path="calendar" element={<AdminCalendarPage />} />
           <Route index element={<AdminPage />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
+          <Route path="applications" element={<AdminApplicationsPage />} />
+
         </Route>
       </Route>
 
