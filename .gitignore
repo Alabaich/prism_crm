@@ -80,3 +80,14 @@ users.json
 token.json
 
 backend/logs/
+
+
+backend/storage/signed/*
+backend/storage/assembled/*
+backend/storage/uploads/*
+backend/storage/signatures/*
+!backend/storage/.gitkeep
+!backend/storage/signed/.gitkeep
+!backend/storage/assembled/.gitkeep
+!backend/storage/uploads/.gitkeep
+!backend/storage/signatures/.gitkeep

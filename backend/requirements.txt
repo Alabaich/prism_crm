@@ -12,3 +12,6 @@ bcrypt
 PyJWT
 pymupdf
 reportlab 
+python-multipart
+Pillow
+google-generativeai

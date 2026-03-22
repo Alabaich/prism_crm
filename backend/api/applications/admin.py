@@ -58,6 +58,8 @@ class ApplicationCreate(BaseModel):
     signers: List[SignerInfo]          # 1–5 signers (applicant + co-applicants)
     building: Optional[str] = None
     unit_number: Optional[str] = None
+    lease_start: Optional[str] = None      
+    monthly_rent: Optional[str] = None
 
 class ApplicationReject(BaseModel):
     rejection_reason: str
@@ -69,7 +71,7 @@ class ApplicationReject(BaseModel):
 
 def send_application_email(signer_name: str, signer_email: str, token: str, building: Optional[str]):
     """Send signing link email to one applicant."""
-    signing_url = f"{BASE_URL}/apply/{token}"
+    signing_url = f"{BASE_URL}/pub_apply/{token}"
     building_text = f" for <strong>{building}</strong>" if building else ""
 
     html = f"""
@@ -175,6 +177,8 @@ def create_application(payload: ApplicationCreate, db: Session = Depends(get_db)
         lead_id=payload.lead_id,
         building=payload.building,
         unit_number=payload.unit_number,
+        lease_start=payload.lease_start,        # ← add
+        monthly_rent=payload.monthly_rent,
         signer_ids=signer_ids_list,
         status="sent"
     )
@@ -273,6 +277,7 @@ def get_applications(
                     "signer_name": s.signer_name,
                     "signer_email": s.signer_email,
                     "status": s.status,
+                    "token": s.token,  
                     "consent_given_at": s.consent_given_at.isoformat() if s.consent_given_at else None,
                     "submitted_at": s.declined_at.isoformat() if s.declined_at else None,
                 })
@@ -287,6 +292,8 @@ def get_applications(
             "approved_at": app.approved_at.isoformat() if app.approved_at else None,
             "rejection_reason": app.rejection_reason,
             "signers": sessions,
+            
+            "ai_risk_level": app.ai_review.get("risk_level") if app.ai_review else None,
             # Quick tracking stats
             "total_signers": len(sessions),
             "completed_signers": sum(1 for s in sessions if s["status"] == "completed"),
@@ -325,6 +332,7 @@ def get_application(application_id: int, db: Session = Depends(get_db)):
                 "expires_at": s.expires_at.isoformat() if s.expires_at else None,
                 "consent_given_at": s.consent_given_at.isoformat() if s.consent_given_at else None,
                 "signatures": s.signatures,
+                "ai_review": app.ai_review,
             })
 
     return {
@@ -355,6 +363,7 @@ def get_application(application_id: int, db: Session = Depends(get_db)):
         "income_proof_id": app.income_proof_id,
         "signed_form_410_id": app.signed_form_410_id,
         "signed_consent_id": app.signed_consent_id,
+        "landlord_reference_id": app.landlord_reference_id,
         # Status
         "status": app.status,
         "approved_at": app.approved_at.isoformat() if app.approved_at else None,
@@ -362,6 +371,7 @@ def get_application(application_id: int, db: Session = Depends(get_db)):
         # Signing sessions
         "package_id": package.id if package else None,
         "signing_sessions": sessions,
+        "ai_review": app.ai_review
     }
 
 
@@ -440,7 +450,35 @@ def reject_application(application_id: int, payload: ApplicationReject, db: Sess
         "application_id": application_id,
     }
 
-
+ 
+@router.post("/{application_id}/ai-review")
+def trigger_ai_review(application_id: int, db: Session = Depends(get_db)):
+    """Run AI risk assessment on an application."""
+    app = db.query(Application).filter(Application.id == application_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+ 
+    try:
+        from services.ai_review import run_ai_review
+        result = run_ai_review(application_id=application_id, db=db)
+ 
+        # Store on application record
+        app.ai_review = result
+        db.commit()
+ 
+        logger.info(f"🤖 AI review completed for application {application_id}: {result.get('risk_level')}")
+ 
+        return {
+            "status": "success",
+            "risk_level": result.get("risk_level"),
+            "summary": result.get("summary"),
+            "review": result,
+        }
+    except Exception as e:
+        logger.error(f"❌ AI review failed for application {application_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"AI review failed: {str(e)}")
+ 
+ 
 # --- POST /{id}/resend — Resend signing email to a specific signer ---
 @router.post("/{application_id}/resend/{session_id}")
 def resend_application_email(application_id: int, session_id: int, db: Session = Depends(get_db)):

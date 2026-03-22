@@ -10,11 +10,6 @@ Flow:
     4. Save final signed PDFs to disk
     5. Register in docs table
     6. Update application record with doc IDs
-
-Usage:
-    from services.pdf.pipeline import process_completed_application
-
-    process_completed_application(package_id=5, db=db)
 """
 
 import os
@@ -39,13 +34,6 @@ logger = logging.getLogger("pdf.pipeline")
 def process_completed_application(package_id: int, db: Session) -> dict:
     """
     Run the full PDF pipeline for a completed application package.
-
-    Args:
-        package_id: ID of the DocumentPackage
-        db:         SQLAlchemy session
-
-    Returns:
-        dict with doc IDs for form_410 and privacy_consent
     """
     logger.info(f"🚀 Starting PDF pipeline for package {package_id}")
 
@@ -69,7 +57,7 @@ def process_completed_application(package_id: int, db: Session) -> dict:
     if not app:
         raise ValueError(f"Application not found for lead {package.lead_id}")
 
-    # --- 3. Load all signing sessions (ordered by created_at = signer order) ---
+    # --- 3. Load all signing sessions ---
     sessions = db.query(SigningSession).filter(
         SigningSession.package_id == package_id
     ).order_by(SigningSession.created_at).all()
@@ -77,38 +65,82 @@ def process_completed_application(package_id: int, db: Session) -> dict:
     if not sessions:
         raise ValueError(f"No signing sessions found for package {package_id}")
 
-    # Verify all sessions are completed
     incomplete = [s for s in sessions if s.status != "completed"]
     if incomplete:
         raise ValueError(f"Not all sessions completed. Incomplete: {[s.id for s in incomplete]}")
 
     # --- 4. Build data dict for PDF generators ---
     pdf_data = {
+        # Lead contact info
         "prospect_name": lead.prospect_name,
         "email": lead.email,
         "phone": lead.phone,
+
+        # Package info (set by admin)
         "building": package.building,
         "unit_number": package.unit_number,
         "lease_start": package.lease_start,
         "monthly_rent": package.monthly_rent,
-        # Application fields
+
+        # Applicant #1 — Personal
+        "date_of_birth": app.date_of_birth,
+        "sin_number": app.sin_number,
+        "drivers_license": app.drivers_license,
+
+        # Applicant #1 — Present Employment
         "employer_name": app.employer_name,
         "employment_type": app.employment_type,
         "monthly_income": app.monthly_income,
         "position_held": app.position_held,
         "length_of_employment": app.length_of_employment,
+        "business_address": app.business_address,
+        "business_phone": app.business_phone,
+        "supervisor_name": app.supervisor_name,
+
+        # Applicant #1 — Prior Employment
         "prior_employer_name": app.prior_employer_name,
         "prior_position_held": app.prior_position_held,
         "prior_length_of_employment": app.prior_length_of_employment,
+        "prior_business_address": app.prior_business_address,
+        "prior_business_phone": app.prior_business_phone,
+        "prior_supervisor": app.prior_supervisor,
+        "prior_salary": app.prior_salary,
+
+        # Banking
+        "bank_name": app.bank_name,
+        "bank_branch": app.bank_branch,
+        "bank_address": app.bank_address,
+        "chequing_account": app.chequing_account,
+        "savings_account": app.savings_account,
+
+        # Financial Obligations
+        "financial_obligations": app.financial_obligations,
+
+        # Co-applicants & occupants
         "co_applicants": app.co_applicants,
         "other_occupants": app.other_occupants,
+
+        # Pets & Parking
         "has_pet": app.has_pet,
         "pet_details": app.pet_details,
         "parking_requested": app.parking_requested,
+
+        # References
         "reference_1_name": app.reference_1_name,
         "reference_1_phone": app.reference_1_phone,
+        "reference_1_address": app.reference_1_address,
+        "reference_1_acquaintance": app.reference_1_acquaintance,
+        "reference_1_occupation": app.reference_1_occupation,
         "reference_2_name": app.reference_2_name,
         "reference_2_phone": app.reference_2_phone,
+        "reference_2_address": app.reference_2_address,
+        "reference_2_acquaintance": app.reference_2_acquaintance,
+        "reference_2_occupation": app.reference_2_occupation,
+
+        # Automobiles
+        "automobiles": app.automobiles,
+
+        # Previous addresses & vacating
         "previous_addresses": app.previous_addresses,
         "vacating_reason": app.vacating_reason,
     }
@@ -153,7 +185,6 @@ def process_completed_application(package_id: int, db: Session) -> dict:
             assembled_path = save_assembled_pdf(pdf_bytes, config["assembled_name"])
 
             # --- Build signature list for stamper ---
-            # Each session may have signed this document
             signatures_to_stamp = []
             for i, session in enumerate(sessions):
                 session_sigs = session.signatures or {}
@@ -181,7 +212,6 @@ def process_completed_application(package_id: int, db: Session) -> dict:
                     signatures=signatures_to_stamp
                 )
             else:
-                # No signatures found — save assembled as signed (shouldn't happen)
                 logger.warning(f"⚠️ No signatures found for {doc_type} in package {package_id}")
                 with open(assembled_path, "rb") as f:
                     save_signed_pdf(f.read(), config["signed_name"])
@@ -228,7 +258,6 @@ def process_completed_application(package_id: int, db: Session) -> dict:
 def trigger_pipeline_if_complete(package_id: int, db: Session):
     """
     Check if all sessions are complete and trigger the pipeline if so.
-    Call this after every signature submission.
     """
     sessions = db.query(SigningSession).filter(
         SigningSession.package_id == package_id

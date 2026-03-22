@@ -14,6 +14,7 @@ from api.bookings.public  import router as public_bookings_router
 from api.auth.admin       import router as auth_router
 from api.applications.admin import router as applications_router
 from api.applications.public import router as applications_public_router
+from api.docs.admin import router as docs_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -44,6 +45,7 @@ app.include_router(public_bookings_router, prefix="/bookings",       tags=["Publ
 app.include_router(admin_bookings_router,  prefix="/admin/bookings", tags=["Admin Bookings"])
 app.include_router(applications_router,    prefix="/applications",   tags=["Applications"])
 app.include_router(applications_public_router, prefix="", tags=["Applications Public"])
+app.include_router(docs_router, prefix="/docs", tags=["Documents"])
 
 @app.get("/")
 def read_root():
