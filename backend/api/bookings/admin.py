@@ -48,18 +48,20 @@ class OutcomeUpdate(BaseModel):
 class BlockedDateCreate(BaseModel):
     date: str
     reason: str | None = None
+    admin_user_id: int | None = None
 
 
 # --- GET / ---
 @router.get("/")
-def get_all_bookings(db: Session = Depends(get_db)):
-    logger.info("📊 Admin dashboard requested all bookings.")
-    results = (
+def get_all_bookings(admin_id: int = None, db: Session = Depends(get_db)):
+    logger.info(f"📊 Admin dashboard requested bookings. Filter admin_id={admin_id}")
+    query = (
         db.query(Booking, Lead)
         .outerjoin(Lead, Booking.lead_id == Lead.id)
-        .order_by(Booking.tour_date.desc(), Booking.tour_time.desc())
-        .all()
     )
+    if admin_id:
+        query = query.filter(Booking.assigned_admin_id == admin_id)
+    results = query.order_by(Booking.tour_date.desc(), Booking.tour_time.desc()).all()
 
     formatted_bookings = []
     for booking, lead in results:
@@ -76,6 +78,7 @@ def get_all_bookings(db: Session = Depends(get_db)):
             "email": lead.email if lead else "no-email@error.com",
             "phone": lead.phone if lead else "N/A",
             "source": lead.source if lead else "Unknown",
+            "assigned_admin_id": booking.assigned_admin_id,
         })
 
     return formatted_bookings
@@ -174,23 +177,33 @@ def update_booking_outcome(booking_id: int, payload: OutcomeUpdate, db: Session 
 
 # --- BLOCKED DATES ---
 
+
 @router.get("/blocked-dates")
-def get_blocked_dates(db: Session = Depends(get_db)):
-    return db.query(BlockedDate).all()
+def get_blocked_dates(admin_user_id: int = None, db: Session = Depends(get_db)):
+    query = db.query(BlockedDate)
+    if admin_user_id:
+        query = query.filter(BlockedDate.admin_user_id == admin_user_id)
+    return query.all()
 
 @router.post("/blocked-dates")
 def block_date(payload: BlockedDateCreate, db: Session = Depends(get_db)):
-    existing = db.query(BlockedDate).filter(BlockedDate.date == payload.date).first()
+    existing = db.query(BlockedDate).filter(
+        BlockedDate.date == payload.date,
+        BlockedDate.admin_user_id == payload.admin_user_id
+    ).first()
     if existing:
         return {"message": "Date is already blocked"}
-    db.add(BlockedDate(date=payload.date, reason=payload.reason))
+    db.add(BlockedDate(date=payload.date, reason=payload.reason, admin_user_id=payload.admin_user_id))
     db.commit()
     logger.info(f"🔒 Blocked date: {payload.date}")
     return {"status": "success", "message": f"Blocked {payload.date}"}
 
 @router.delete("/blocked-dates/{date}")
-def unblock_date(date: str, db: Session = Depends(get_db)):
-    blocked = db.query(BlockedDate).filter(BlockedDate.date == date).first()
+def unblock_date(date: str, admin_user_id: int = None, db: Session = Depends(get_db)):
+    query = db.query(BlockedDate).filter(BlockedDate.date == date)
+    if admin_user_id:
+        query = query.filter(BlockedDate.admin_user_id == admin_user_id)
+    blocked = query.first()
     if blocked:
         db.delete(blocked)
         db.commit()

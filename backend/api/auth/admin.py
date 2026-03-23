@@ -65,6 +65,18 @@ def get_current_admin(
         raise HTTPException(status_code=401, detail="User not found or inactive")
     return user
 
+def require_superadmin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> AdminUser:
+    payload = decode_token(credentials.credentials)
+    user = db.query(AdminUser).filter(AdminUser.id == int(payload["sub"])).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    if user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="Superadmin access required")
+    return user
+
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @router.post("/login")

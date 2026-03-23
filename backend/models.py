@@ -43,6 +43,9 @@ class Lead(Base):
     debug_1 = Column(Text, nullable=True)
     debug_2 = Column(Text, nullable=True)
 
+    # --- Phase 1 addition ---
+    assigned_admin_id = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
+
     # --- RELATIONSHIPS ---
     bookings = relationship("Booking", back_populates="lead")
     tenant = relationship("Tenant", back_populates="lead", uselist=False)
@@ -73,6 +76,10 @@ class Booking(Base):
     # Outcome — only relevant for tours
     tour_outcome = Column(String, nullable=True)  # "Converted to Tenant", "No Show"
 
+    # --- Phase 1 additions ---
+    assigned_admin_id = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
+    building_id = Column(Integer, ForeignKey("buildings.id"), nullable=True)
+
     # --- RELATIONSHIPS ---
     lead = relationship("Lead", back_populates="bookings")
 
@@ -102,14 +109,6 @@ class Tenant(Base):
     move_events = relationship("MoveEvent", back_populates="tenant")
 
 
-class BlockedDate(Base):
-    __tablename__ = "blocked_dates"
-
-    id = Column(Integer, primary_key=True, index=True)
-    date = Column(String, unique=True, index=True)  # Format: YYYY-MM-DD
-    reason = Column(String, nullable=True)
-
-
 class AdminUser(Base):
     __tablename__ = "admin_users"
 
@@ -117,8 +116,46 @@ class AdminUser(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     username = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="admin")
+    role = Column(String, default="admin")  # "admin" | "superadmin"
     is_active = Column(Boolean, default=True)
+
+    # --- Phase 1 additions ---
+    email = Column(String, unique=True, nullable=True)
+    booking_token = Column(String, unique=True, nullable=True)
+
+    # --- Relationships ---
+    buildings = relationship("Building", back_populates="assigned_admin")
+    blocked_dates = relationship("BlockedDate", back_populates="admin")
+
+
+class BlockedDate(Base):
+    __tablename__ = "blocked_dates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(String, index=True)   # unique constraint removed — see migration.sql
+    reason = Column(String, nullable=True)
+
+    # --- Phase 1 addition ---
+    admin_user_id = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
+
+    # --- Relationships ---
+    admin = relationship("AdminUser", back_populates="blocked_dates")
+
+
+class Building(Base):
+    __tablename__ = "buildings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    name = Column(String, nullable=False)
+    address = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+
+    # One admin owns many buildings
+    assigned_admin_id = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
+
+    # --- Relationships ---
+    assigned_admin = relationship("AdminUser", back_populates="buildings")
 
 
 # ==============================================================================
