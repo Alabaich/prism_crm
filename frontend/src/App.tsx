@@ -16,6 +16,7 @@ import AdminCalendarPage from './pages/admin/AdminCalendarPage';
 import AdminApplicationsPage from './pages/admin/application/AdminApplicationsPage';
 import ApplicationPage from './pages/public/application/ApplicationPage';
 import MeetingBookingPage from './pages/public/booking/MeetingBookingPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
 
 const AppContent: React.FC = () => {
   return (
@@ -37,7 +38,7 @@ const AppContent: React.FC = () => {
           <Route index element={<AdminPage />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="applications" element={<AdminApplicationsPage />} />
-
+          <Route path="settings/users" element={<AdminUsersPage />} />
         </Route>
       </Route>
 
