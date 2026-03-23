@@ -40,6 +40,9 @@ def create_token(user: AdminUser) -> str:
         "sub": str(user.id),
         "username": user.username,
         "role": user.role,
+        "email": user.email,
+        "booking_token": user.booking_token,
+        "buildings": [{"id": b.id, "name": b.name} for b in user.buildings],
         "exp": datetime.utcnow() + timedelta(days=JWT_EXPIRE_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -98,6 +101,9 @@ def login(creds: LoginRequest, db: Session = Depends(get_db)):
             "id": user.id,
             "username": user.username,
             "role": user.role,
+            "email": user.email,
+            "booking_token": user.booking_token,
+            "buildings": [{"id": b.id, "name": b.name} for b in user.buildings],
         },
     }
 
@@ -108,4 +114,7 @@ def me(current_user: AdminUser = Depends(get_current_admin)):
         "id": current_user.id,
         "username": current_user.username,
         "role": current_user.role,
+        "email": current_user.email,
+        "booking_token": current_user.booking_token,
+        "buildings": [{"id": b.id, "name": b.name} for b in current_user.buildings],
     }
