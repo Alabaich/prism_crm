@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import SessionLocal
-from models import Booking, Lead, BlockedDate, Tenant
+from models import Booking, Lead, BlockedDate, Tenant, Building, AdminUser
 import logging
 import os
 import sys
 from datetime import datetime, timedelta
 from mailer import send_booking_notification, create_ics_event
+from api.auth.admin import get_current_admin
 
 router = APIRouter()
 
@@ -50,6 +51,14 @@ class BlockedDateCreate(BaseModel):
     reason: str | None = None
     admin_user_id: int | None = None
 
+class WalkInCreate(BaseModel):
+    building: str
+    date: str
+    time: str
+    name: str
+    email: str
+    phone: str | None = None
+
 
 # --- GET / ---
 @router.get("/")
@@ -72,7 +81,7 @@ def get_all_bookings(admin_id: int = None, db: Session = Depends(get_db)):
             "time": booking.tour_time,
             "status": booking.status,
             "tour_outcome": booking.tour_outcome,
-            "booking_type": booking.booking_type or "tour",  # fallback for old rows
+            "booking_type": booking.booking_type or "tour",
             "created_at": booking.created_at,
             "name": lead.prospect_name if lead else "MISSING LEAD INFO",
             "email": lead.email if lead else "no-email@error.com",
@@ -82,6 +91,53 @@ def get_all_bookings(admin_id: int = None, db: Session = Depends(get_db)):
         })
 
     return formatted_bookings
+
+
+# --- POST /create — Walk-in / past tour, no email sent ---
+@router.post("/create")
+def create_walkin_booking(
+    payload: WalkInCreate,
+    db: Session = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin)
+):
+    existing_lead = db.query(Lead).filter(Lead.email == payload.email).first()
+    if existing_lead:
+        target_lead = existing_lead
+    else:
+        target_lead = Lead(
+            prospect_name=payload.name,
+            email=payload.email,
+            phone=payload.phone,
+            source="Walk-in",
+            status="New"
+        )
+        db.add(target_lead)
+        db.flush()
+
+    building_obj = db.query(Building).filter(Building.name == payload.building).first()
+    assigned_admin_id = building_obj.assigned_admin_id if building_obj else current_user.id
+
+    new_booking = Booking(
+        lead_id=target_lead.id,
+        building=payload.building,
+        building_id=building_obj.id if building_obj else None,
+        tour_date=payload.date,
+        tour_time=payload.time,
+        status="Completed",
+        booking_type="tour",
+        assigned_admin_id=assigned_admin_id,
+    )
+    db.add(new_booking)
+
+    try:
+        db.commit()
+        logger.info(f"🚶 Walk-in tour added by admin {current_user.id} for {payload.email}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"❌ Walk-in save error: {e}")
+        raise HTTPException(status_code=500, detail="Could not save booking")
+
+    return {"status": "success", "booking_id": new_booking.id, "lead_id": target_lead.id}
 
 
 # --- PUT /{id}/status ---
@@ -177,13 +233,13 @@ def update_booking_outcome(booking_id: int, payload: OutcomeUpdate, db: Session 
 
 # --- BLOCKED DATES ---
 
-
 @router.get("/blocked-dates")
 def get_blocked_dates(admin_user_id: int = None, db: Session = Depends(get_db)):
     query = db.query(BlockedDate)
     if admin_user_id:
         query = query.filter(BlockedDate.admin_user_id == admin_user_id)
     return query.all()
+
 
 @router.post("/blocked-dates")
 def block_date(payload: BlockedDateCreate, db: Session = Depends(get_db)):
@@ -197,6 +253,7 @@ def block_date(payload: BlockedDateCreate, db: Session = Depends(get_db)):
     db.commit()
     logger.info(f"🔒 Blocked date: {payload.date}")
     return {"status": "success", "message": f"Blocked {payload.date}"}
+
 
 @router.delete("/blocked-dates/{date}")
 def unblock_date(date: str, admin_user_id: int = None, db: Session = Depends(get_db)):

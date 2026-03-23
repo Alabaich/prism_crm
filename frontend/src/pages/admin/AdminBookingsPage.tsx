@@ -15,9 +15,10 @@ import {
   Search,
   X,
   Coffee,
+  Plus,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import WalkInModal from "./components/WalkInModal";
 
 interface Booking {
   id: number;
@@ -44,7 +45,6 @@ type TypeFilter = "tour" | "all";
 type StatusFilter = "active" | "all";
 
 const AdminBookingsPage: React.FC = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,19 +54,16 @@ const AdminBookingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<number | null>(null);
+  const [showWalkIn, setShowWalkIn] = useState(false);
 
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [filterAdminId, setFilterAdminId] = useState<number | null>(null);
 
-  // Set default filter to current user on mount
   useEffect(() => {
-    if (user?.id) {
-      setFilterAdminId(user.id);
-    }
+    if (user?.id) setFilterAdminId(user.id);
     fetchAdmins();
   }, [user]);
 
-  // Re-fetch bookings when filter changes
   useEffect(() => {
     fetchBookings(filterAdminId);
   }, [filterAdminId]);
@@ -77,7 +74,7 @@ const AdminBookingsPage: React.FC = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("prism_token")}` },
       });
       if (res.ok) setAdmins(await res.json());
-    } catch {}
+    } catch { }
   };
 
   const fetchBookings = async (adminId?: number | null) => {
@@ -238,13 +235,20 @@ const AdminBookingsPage: React.FC = () => {
                     {filteredBookings.length}
                   </span>
                 </div>
-
                 <button
-                  onClick={() => navigate("/booking")}
-                  className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl border border-zinc-700 shadow-sm text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                  onClick={() => window.open("/booking", "_blank")}
+                  className="bg-white text-zinc-900 px-5 py-2.5 rounded-xl border border-zinc-200 shadow-sm text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-2"
                 >
                   <CalendarIcon className="w-4 h-4" />
                   Book a Tour
+                </button>
+
+                <button
+                  onClick={() => setShowWalkIn(true)}
+                  className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl border border-zinc-700 shadow-sm text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Walk-in Tour
                 </button>
               </div>
             </div>
@@ -272,8 +276,8 @@ const AdminBookingsPage: React.FC = () => {
                         {searchTerm
                           ? `No bookings match "${searchTerm}".`
                           : statusFilter === "active"
-                          ? "No active bookings."
-                          : "No bookings found."}
+                            ? "No active bookings."
+                            : "No bookings found."}
                       </td>
                     </tr>
                   ) : (
@@ -345,15 +349,14 @@ const AdminBookingsPage: React.FC = () => {
                           </td>
 
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${
-                              booking.status === "confirmed" || booking.status === "Completed"
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${booking.status === "confirmed" || booking.status === "Completed"
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                 : booking.status === "cancelled"
-                                ? "bg-red-100 text-red-800 border border-red-200"
-                                : "bg-amber-100 text-amber-800 border border-amber-200"
-                            }`}>
+                                  ? "bg-red-100 text-red-800 border border-red-200"
+                                  : "bg-amber-100 text-amber-800 border border-amber-200"
+                              }`}>
                               {booking.status === "cancelled" ? <X className="w-3 h-3" /> :
-                               booking.status === "confirmed" || booking.status === "Completed" ? <CheckCircle2 className="w-3 h-3" /> : null}
+                                booking.status === "confirmed" || booking.status === "Completed" ? <CheckCircle2 className="w-3 h-3" /> : null}
                               {booking.status}
                             </span>
                           </td>
@@ -430,6 +433,13 @@ const AdminBookingsPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {showWalkIn && (
+        <WalkInModal
+          onClose={() => setShowWalkIn(false)}
+          onSuccess={() => fetchBookings(filterAdminId)}
+        />
+      )}
     </div>
   );
 };
