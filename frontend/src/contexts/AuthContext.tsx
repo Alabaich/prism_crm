@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+  isSuperAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,9 +29,8 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // true on mount while we check localStorage
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // ── Restore session from localStorage on page load ────────────────────────
   useEffect(() => {
     const storedToken = localStorage.getItem('prism_token');
     const storedUser = localStorage.getItem('prism_user');
@@ -41,7 +41,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(storedToken);
         setUser(parsedUser);
       } catch {
-        // Corrupted data — clear it
         localStorage.removeItem('prism_token');
         localStorage.removeItem('prism_user');
       }
@@ -50,7 +49,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  // ── Login ──────────────────────────────────────────────────────────────────
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -65,15 +63,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.success && data.token) {
         const userData: User = {
+          id: data.user.id,
           username: data.user.username,
           role: data.user.role,
+          email: data.user.email ?? null,
+          booking_token: data.user.booking_token ?? null,
+          buildings: data.user.buildings ?? [],
         };
 
-        // Save to state
         setToken(data.token);
         setUser(userData);
-
-        // Persist in localStorage — survives page refresh and container restarts
         localStorage.setItem('prism_token', data.token);
         localStorage.setItem('prism_user', JSON.stringify(userData));
 
@@ -87,7 +86,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -95,8 +93,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('prism_user');
   };
 
+  const isSuperAdmin = user?.role === 'superadmin';
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, isSuperAdmin }}>
       {children}
     </AuthContext.Provider>
   );

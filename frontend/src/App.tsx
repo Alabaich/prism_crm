@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Import Pages
-import BookingPage from './pages/public/BookingPage';
+import BookingPage from './pages/public/booking/BookingPage';
 import LoginPage from './pages/public/LoginPage';
 import AdminPage from './pages/admin/AdminPage';
 import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
@@ -15,6 +15,7 @@ import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import AdminCalendarPage from './pages/admin/AdminCalendarPage';
 import AdminApplicationsPage from './pages/admin/application/AdminApplicationsPage';
 import ApplicationPage from './pages/public/application/ApplicationPage';
+import MeetingBookingPage from './pages/public/booking/MeetingBookingPage';
 
 const AppContent: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const AppContent: React.FC = () => {
       <Route path="/meeting" element={<BookingPage bookingType="meeting" />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pub_apply/:token" element={<ApplicationPage />} />
+      <Route path="/book/u/:token" element={<MeetingBookingPage />} />
 
       {/* === PROTECTED ADMIN ROUTES === */}
       <Route element={<ProtectedRoute />}>

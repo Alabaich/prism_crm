@@ -19,8 +19,12 @@ export interface DateRange {
 }
 
 export interface User {
+  id: number;
   username: string;
   role: string;
+  email: string | null;
+  booking_token: string | null;
+  buildings: { id: number; name: string }[];
 }
 
 export interface Booking {
