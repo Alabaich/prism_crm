@@ -101,7 +101,8 @@ def send_booking_notification(
     booking: Dict[str, Any],
     is_update: bool = False,
     attachment_content: Optional[bytes] = None,
-    attachment_name: Optional[str] = None
+    attachment_name: Optional[str] = None,
+    agent_email: Optional[str] = None
 ) -> bool:
     """
     Send an email notification for a booking.
@@ -116,6 +117,8 @@ def send_booking_notification(
         return False
 
     recipients = [recipient, ADMIN_EMAIL]
+    if agent_email and agent_email != ADMIN_EMAIL and agent_email != recipient:
+        recipients.append(agent_email)
 
     # --- Helper to get badge style based on status ---
     def get_badge_style(status: str) -> str:
