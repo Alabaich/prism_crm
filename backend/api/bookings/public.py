@@ -127,6 +127,15 @@ def build_and_send_notification(booking_data, new_booking, booking_type, agent_e
         logger.error(f"❌ Failed to send email for booking {new_booking.id}: {e}")
 
 
+
+# --- GET /buildings ---
+@router.get("/buildings")
+def get_public_buildings(db: Session = Depends(get_db)):
+    logger.info("🏢 Public frontend requested available buildings.")
+    # Return just a flat list of building names for the frontend dropdown
+    buildings = db.query(Building.name).all()
+    return [b[0] for b in buildings]
+    
 # --- GET /blocked-dates ---
 @router.get("/blocked-dates")
 def get_public_blocked_dates(db: Session = Depends(get_db)):

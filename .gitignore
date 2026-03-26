@@ -91,3 +91,5 @@ backend/storage/signatures/*
 !backend/storage/assembled/.gitkeep
 !backend/storage/uploads/.gitkeep
 !backend/storage/signatures/.gitkeep
+
+.env
