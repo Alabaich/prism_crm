@@ -311,6 +311,9 @@ class Application(Base):
     automobiles = Column(JSON, nullable=True)
     ai_review = Column(JSON, nullable=True)
 
+    # Additional documents (student visa, work permit, etc.)
+    additional_doc_ids = Column(JSON, nullable=True, default=list)
+
 
 # ==============================================================================
 # NEW: MOVE EVENTS
