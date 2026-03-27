@@ -412,11 +412,11 @@ async def upload_document(
     if not session.consent_given_at:
         raise HTTPException(status_code=400, detail="Consent must be given before uploading")
 
-    valid_categories = ("id_upload", "income_proof", "landlord_reference")
+    valid_categories = ("id_upload", "income_proof", "landlord_reference", "additional_doc")
     if category not in valid_categories:
         raise HTTPException(status_code=400, detail=f"Invalid category. Must be one of: {valid_categories}")
 
-    allowed_types = ("image/jpeg", "image/png", "image/webp", "application/pdf")
+    allowed_types = ("image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf")
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Invalid file type. Upload JPG, PNG, or PDF.")
 
