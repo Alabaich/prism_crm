@@ -10,6 +10,7 @@ import {
   Home,
   X,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import type { SessionData } from "../types";
 import { inputClass, labelClass } from "../types";
@@ -130,6 +131,67 @@ const DropZone: React.FC<DropZoneProps> = ({
   );
 };
 
+// ── Additional Doc Upload Button ─────────────────────────────────────────────
+
+interface AddDocButtonProps {
+  uploading: boolean;
+  onUpload: (file: File) => void;
+}
+
+const AddDocButton: React.FC<AddDocButtonProps> = ({ uploading, onUpload }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) onUpload(dropped);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) onUpload(selected);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+      className={`flex flex-col items-center justify-center px-4 py-5 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+        dragOver
+          ? "border-zinc-900 bg-zinc-50"
+          : "border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50"
+      }`}
+    >
+      {uploading ? (
+        <Loader2 className="w-5 h-5 text-zinc-400 animate-spin mb-1.5" />
+      ) : (
+        <Plus className="w-5 h-5 text-zinc-400 mb-1.5" />
+      )}
+      <p className="text-sm text-zinc-600 font-medium">
+        {uploading ? "Uploading..." : "Add another document"}
+      </p>
+      <p className="text-xs text-zinc-400 mt-0.5">
+        Student visa, work permit, co-signer letter, bank statement, etc.
+      </p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,.pdf"
+        onChange={handleChange}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 type PreviousPosition = "rent" | "own" | "parents" | "";
@@ -144,6 +206,10 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
   const [previousPosition, setPreviousPosition] = useState<PreviousPosition>("");
   const [noReferenceReason, setNoReferenceReason] = useState("");
 
+  // Additional documents (multiple allowed)
+  const [additionalDocs, setAdditionalDocs] = useState<UploadedFile[]>([]);
+  const [additionalUploading, setAdditionalUploading] = useState(false);
+
   const handleUpload = async (file: File, category: string) => {
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
@@ -152,7 +218,7 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
     }
 
     // Validate file type
-    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
     if (!allowed.includes(file.type)) {
       onError("Invalid file type. Please upload an image (JPG, PNG) or PDF.");
       return;
@@ -191,6 +257,56 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
   const handleRemove = (category: string) => {
     setFiles((prev) => ({ ...prev, [category]: null }));
   };
+
+  // ── Additional document handlers ──
+
+  const handleAdditionalUpload = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      onError("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      onError("Invalid file type. Please upload an image (JPG, PNG) or PDF.");
+      return;
+    }
+
+    setAdditionalUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "additional_doc");
+
+      const res = await fetch(`/apply/${token}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+
+      const result = await res.json();
+
+      setAdditionalDocs((prev) => [
+        ...prev,
+        { id: result.doc_id, name: file.name, category: "additional_doc" },
+      ]);
+    } catch (err: any) {
+      onError(err.message);
+    } finally {
+      setAdditionalUploading(false);
+    }
+  };
+
+  const removeAdditionalDoc = (docId: number) => {
+    setAdditionalDocs((prev) => prev.filter((d) => d.id !== docId));
+  };
+
+  // ── Validation ──
 
   const canProceed = (): boolean => {
     // Photo ID and income proof are required
@@ -330,6 +446,55 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
             )}
           </div>
         )}
+
+        {/* ── Additional Documents (Optional) ── */}
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2 mb-2">
+            <FileText className="w-4 h-4 text-zinc-400" />
+            Additional Documents
+            <span className="text-xs font-normal text-zinc-400 ml-1">(Optional)</span>
+          </h3>
+          <p className="text-xs text-zinc-500 mb-4">
+            Upload any supporting documents such as student visa, work permit, co-signer authorization,
+            bank statements, credit report, or any other relevant paperwork.
+          </p>
+
+          {/* Uploaded additional docs list */}
+          {additionalDocs.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {additionalDocs.map((doc, i) => (
+                <div
+                  key={doc.id || i}
+                  className="flex items-center justify-between px-4 py-3 rounded-xl bg-green-50 border border-green-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">{doc.name}</p>
+                      <p className="text-[10px] text-green-600 uppercase tracking-wider font-bold">
+                        Additional Document
+                      </p>
+                    </div>
+                  </div>
+                  {doc.id && (
+                    <button
+                      onClick={() => removeAdditionalDoc(doc.id!)}
+                      className="p-1.5 text-green-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload button — always visible so user can add multiple */}
+          <AddDocButton
+            uploading={additionalUploading}
+            onUpload={handleAdditionalUpload}
+          />
+        </div>
       </div>
 
       <button
