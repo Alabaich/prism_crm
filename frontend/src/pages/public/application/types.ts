@@ -18,13 +18,15 @@ export interface SessionData {
   expires_at: string | null;
   building: string | null;
   unit_number: string | null;
-  lease_start: string | null;      // ← ADD
+  lease_start: string | null;      
   monthly_rent: string | null; 
   documents: DocumentInfo[];
   prefill: Record<string, any> | null;
   total_documents: number;
   signed_documents: number;
   all_signed: boolean;
+  requires_otp: boolean;      
+  otp_verified: boolean;  
 }
 
 export interface FormData {

@@ -205,7 +205,7 @@ def create_application(payload: ApplicationCreate, db: Session = Depends(get_db)
 
     for signer in payload.signers:
         token = str(uuid.uuid4())
-        expires_at = datetime.utcnow() + timedelta(days=7)
+        expires_at = datetime.utcnow() + timedelta(days=14)
 
         session = SigningSession(
             package_id=package.id,

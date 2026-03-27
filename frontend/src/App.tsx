@@ -5,7 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 // Import Pages
 import BookingPage from './pages/public/booking/BookingPage';
 import LoginPage from './pages/public/LoginPage';
-import AdminPage from './pages/admin/AdminPage';
+import AdminPage from './pages/admin/leads/AdminPage';
 import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
 
 // Import Layout & Security Wrappers

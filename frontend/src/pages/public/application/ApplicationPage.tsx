@@ -18,6 +18,10 @@ import FormTab from "./components/FormTab";
 import DocumentsTab from "./components/DocumentsTab";
 import SignTab from "./components/SignTab";
 import DoneTab from "./components/DoneTab";
+import OtpGate from "./components/OtpGate";
+import InactivityWarning from "./components/InactivityWarning";
+
+const SESSION_TOKEN_KEY = "prism_session_token";
 
 const ApplicationPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -30,11 +34,39 @@ const ApplicationPage: React.FC = () => {
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [signerIndex, setSignerIndex] = useState(0);
 
+  // ── OTP State ──
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string>(
+    () => sessionStorage.getItem(SESSION_TOKEN_KEY) || ""
+  );
+
+  // Persist session token to sessionStorage (survives refresh, dies on tab close)
+  useEffect(() => {
+    if (sessionToken) {
+      sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+    } else {
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+  }, [sessionToken]);
+
+  // ── Helper: build headers with session token ──
+  const getHeaders = useCallback(
+    (contentType?: string) => {
+      const headers: Record<string, string> = {};
+      if (contentType) headers["Content-Type"] = contentType;
+      if (sessionToken) headers["X-Session-Token"] = sessionToken;
+      return headers;
+    },
+    [sessionToken]
+  );
+
   // ── Load session ──
   const loadSession = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`/apply/${token}`);
+      const res = await fetch(`/apply/${token}`, {
+        headers: sessionToken ? { "X-Session-Token": sessionToken } : {},
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || "Invalid or expired link");
@@ -42,6 +74,14 @@ const ApplicationPage: React.FC = () => {
       const data: SessionData = await res.json();
       setSession(data);
 
+      // Check OTP gate
+      if (data.requires_otp && !data.otp_verified) {
+        setRequiresOtp(true);
+        setLoading(false);
+        return;
+      }
+
+      setRequiresOtp(false);
       setSignerIndex(data.signer_index ?? 0);
 
       // Determine starting tab
@@ -55,7 +95,7 @@ const ApplicationPage: React.FC = () => {
         setActiveTab("sign");
       }
 
-      // Prefill form from lead/application data
+      // Prefill form
       if (data.prefill) {
         setFormData((prev) => ({
           ...prev,
@@ -71,7 +111,7 @@ const ApplicationPage: React.FC = () => {
         }));
       }
 
-      // Prefill property details from package (editable by applicant 1)
+      // Prefill property details
       setFormData((prev) => ({
         ...prev,
         building: data.building || prev.building || "",
@@ -79,17 +119,53 @@ const ApplicationPage: React.FC = () => {
         lease_start: data.lease_start || prev.lease_start || "",
         monthly_rent: data.monthly_rent || prev.monthly_rent || "",
       }));
-
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, sessionToken]);
 
   useEffect(() => {
     loadSession();
   }, [loadSession]);
+
+  // ── OTP verified handler ──
+  const handleOtpVerified = (newSessionToken: string) => {
+    setSessionToken(newSessionToken);
+    setRequiresOtp(false);
+    setLoading(true);
+    // Reload session with the new token — will get full data this time
+    // setTimeout(() => loadSession(), 100);
+  };
+
+  // ── Inactivity handlers ──
+  const handleStillHere = async () => {
+    // Ping the server to refresh activity timestamp
+    if (!token || !sessionToken) return;
+    try {
+      await fetch(`/apply/${token}`, {
+        headers: { "X-Session-Token": sessionToken },
+      });
+    } catch {
+      // Silent — the timer is already reset client-side
+    }
+  };
+
+  const handleInactivityExpired = () => {
+    setSessionToken("");
+    setRequiresOtp(true);
+    setError("");
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            requires_otp: true,
+            otp_verified: false,
+          }
+        : prev
+    );
+  };
 
   // ── Tab navigation ──
   const canAccessTab = (tab: TabKey): boolean => {
@@ -109,7 +185,7 @@ const ApplicationPage: React.FC = () => {
     try {
       const res = await fetch(`/apply/${token}/consent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders("application/json"),
         body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error("Failed to record consent");
@@ -129,7 +205,7 @@ const ApplicationPage: React.FC = () => {
     try {
       await fetch(`/apply/${token}/decline`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders("application/json"),
         body: JSON.stringify({ reason }),
       });
       await loadSession();
@@ -145,10 +221,18 @@ const ApplicationPage: React.FC = () => {
     try {
       const res = await fetch(`/apply/${token}/form`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders("application/json"),
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error("Failed to save form data");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          // Session expired — re-trigger OTP
+          handleInactivityExpired();
+          return;
+        }
+        throw new Error(data.detail || "Failed to save form data");
+      }
       setActiveTab("documents");
     } catch (err: any) {
       setError(err.message);
@@ -172,7 +256,7 @@ const ApplicationPage: React.FC = () => {
     );
   }
 
-  // ── Error state ──
+  // ── Error state (no session at all) ──
   if (error && !session) {
     return (
       <div className="min-h-screen w-full bg-slate-50 flex flex-col">
@@ -203,16 +287,55 @@ const ApplicationPage: React.FC = () => {
               <XCircle className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-zinc-900 mb-2">Application Declined</h2>
-            <p className="text-zinc-500 text-sm">You have declined this application. If this was a mistake, please contact the property management team.</p>
+            <p className="text-zinc-500 text-sm">
+              You have declined this application. If this was a mistake, please contact the property management team.
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
+  // ── OTP Gate ──
+  if (requiresOtp) {
+    return (
+      <div className="min-h-screen w-full bg-slate-50 flex flex-col">
+        <Header currentView="booking" />
+        <main className="flex-1 w-full px-4 py-8 sm:py-12">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6 text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 mb-1">
+                Rental Application
+              </h1>
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 sm:p-8">
+              <OtpGate
+                token={token!}
+                signerName={session.signer_name}
+                maskedEmail={session.signer_email}
+                building={session.building}
+                unitNumber={session.unit_number}
+                onVerified={handleOtpVerified}
+                onError={setError}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Main Application Flow ──
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col">
       <Header currentView="booking" />
+
+      {/* Inactivity warning — only active when we have a session token */}
+      <InactivityWarning
+        active={!!sessionToken && activeTab !== "done"}
+        onStillHere={handleStillHere}
+        onExpired={handleInactivityExpired}
+      />
 
       <main className="flex-1 w-full px-4 py-8 sm:py-12">
         <div className="max-w-2xl mx-auto">
@@ -315,6 +438,7 @@ const ApplicationPage: React.FC = () => {
                   <DocumentsTab
                     session={session}
                     token={token}
+                    sessionToken={sessionToken}
                     onContinue={() => setActiveTab("sign")}
                     onError={setError}
                   />
@@ -324,6 +448,7 @@ const ApplicationPage: React.FC = () => {
                   <SignTab
                     session={session}
                     token={token}
+                    sessionToken={sessionToken}
                     submitting={submitting}
                     setSubmitting={setSubmitting}
                     onError={setError}
