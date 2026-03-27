@@ -27,6 +27,7 @@ interface UploadedFile {
 interface Props {
   session: SessionData;
   token: string;
+  sessionToken?: string;
   onContinue: () => void;
   onError: (msg: string) => void;
 }
@@ -67,7 +68,6 @@ const DropZone: React.FC<DropZoneProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) onUpload(selected, category);
-    // Reset input so same file can be re-selected
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -196,7 +196,7 @@ const AddDocButton: React.FC<AddDocButtonProps> = ({ uploading, onUpload }) => {
 
 type PreviousPosition = "rent" | "own" | "parents" | "";
 
-const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) => {
+const DocumentsTab: React.FC<Props> = ({ session, token, sessionToken, onContinue, onError }) => {
   const [files, setFiles] = useState<Record<string, UploadedFile | null>>({
     id_upload: null,
     income_proof: null,
@@ -206,18 +206,21 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
   const [previousPosition, setPreviousPosition] = useState<PreviousPosition>("");
   const [noReferenceReason, setNoReferenceReason] = useState("");
 
-  // Additional documents (multiple allowed)
   const [additionalDocs, setAdditionalDocs] = useState<UploadedFile[]>([]);
   const [additionalUploading, setAdditionalUploading] = useState(false);
 
+  const getUploadHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {};
+    if (sessionToken) headers["X-Session-Token"] = sessionToken;
+    return headers;
+  };
+
   const handleUpload = async (file: File, category: string) => {
-    // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
       onError("File too large. Maximum size is 10MB.");
       return;
     }
 
-    // Validate file type
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
     if (!allowed.includes(file.type)) {
       onError("Invalid file type. Please upload an image (JPG, PNG) or PDF.");
@@ -233,6 +236,7 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
 
       const res = await fetch(`/apply/${token}/upload`, {
         method: "POST",
+        headers: getUploadHeaders(),
         body: formData,
       });
 
@@ -258,15 +262,13 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
     setFiles((prev) => ({ ...prev, [category]: null }));
   };
 
-  // ── Additional document handlers ──
-
   const handleAdditionalUpload = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
       onError("File too large. Maximum size is 10MB.");
       return;
     }
 
-    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
     if (!allowed.includes(file.type)) {
       onError("Invalid file type. Please upload an image (JPG, PNG) or PDF.");
       return;
@@ -281,6 +283,7 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
 
       const res = await fetch(`/apply/${token}/upload`, {
         method: "POST",
+        headers: getUploadHeaders(),
         body: formData,
       });
 
@@ -306,31 +309,17 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
     setAdditionalDocs((prev) => prev.filter((d) => d.id !== docId));
   };
 
-  // ── Validation ──
-
   const canProceed = (): boolean => {
-    // Photo ID and income proof are required
     if (!files.id_upload || !files.income_proof) return false;
-    // Previous position must be selected
     if (!previousPosition) return false;
-    // If renting, need landlord reference OR reason why not
     if (previousPosition === "rent" && !files.landlord_reference && !noReferenceReason.trim()) return false;
     return true;
   };
 
   const handleContinue = () => {
-    if (!files.id_upload) {
-      onError("Photo ID is required");
-      return;
-    }
-    if (!files.income_proof) {
-      onError("Proof of income is required");
-      return;
-    }
-    if (!previousPosition) {
-      onError("Please select your previous living situation");
-      return;
-    }
+    if (!files.id_upload) { onError("Photo ID is required"); return; }
+    if (!files.income_proof) { onError("Proof of income is required"); return; }
+    if (!previousPosition) { onError("Please select your previous living situation"); return; }
     if (previousPosition === "rent" && !files.landlord_reference && !noReferenceReason.trim()) {
       onError("Please upload a landlord reference or explain why you can't provide one");
       return;
@@ -339,12 +328,7 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
   };
 
   return (
-    <motion.div
-      key="documents"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-    >
+    <motion.div key="documents" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
           <Upload className="w-5 h-5" />
@@ -356,37 +340,17 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
       </div>
 
       <div className="space-y-8">
-        {/* ── Required Uploads ── */}
         <div>
           <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2 mb-4">
             <Image className="w-4 h-4 text-zinc-400" />
             Required Documents
           </h3>
           <div className="space-y-4">
-            <DropZone
-              label="Photo ID"
-              hint="Government-issued photo ID (passport, driver's license)"
-              required
-              category="id_upload"
-              file={files.id_upload}
-              uploading={uploading.id_upload || false}
-              onUpload={handleUpload}
-              onRemove={handleRemove}
-            />
-            <DropZone
-              label="Proof of Income"
-              hint="Pay stub, employment letter, or bank statement"
-              required
-              category="income_proof"
-              file={files.income_proof}
-              uploading={uploading.income_proof || false}
-              onUpload={handleUpload}
-              onRemove={handleRemove}
-            />
+            <DropZone label="Photo ID" hint="Government-issued photo ID (passport, driver's license)" required category="id_upload" file={files.id_upload} uploading={uploading.id_upload || false} onUpload={handleUpload} onRemove={handleRemove} />
+            <DropZone label="Proof of Income" hint="Pay stub, employment letter, or bank statement" required category="income_proof" file={files.income_proof} uploading={uploading.income_proof || false} onUpload={handleUpload} onRemove={handleRemove} />
           </div>
         </div>
 
-        {/* ── Previous Living Situation ── */}
         <div>
           <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2 mb-4">
             <Home className="w-4 h-4 text-zinc-400" />
@@ -398,56 +362,30 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
               { value: "own", label: "Owned" },
               { value: "parents", label: "Lived with Parents" },
             ] as const).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setPreviousPosition(option.value)}
-                className={`p-4 rounded-xl border-2 text-center text-sm font-medium transition-all ${
-                  previousPosition === option.value
-                    ? "border-zinc-900 bg-zinc-50 text-zinc-900"
-                    : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
-                }`}
-              >
+              <button key={option.value} type="button" onClick={() => setPreviousPosition(option.value)}
+                className={`p-4 rounded-xl border-2 text-center text-sm font-medium transition-all ${previousPosition === option.value ? "border-zinc-900 bg-zinc-50 text-zinc-900" : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"}`}>
                 {option.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── Landlord Reference (if renting) ── */}
         {previousPosition === "rent" && (
           <div>
             <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2 mb-4">
               <FileText className="w-4 h-4 text-zinc-400" />
               Landlord Reference
             </h3>
-            <DropZone
-              label="Landlord Reference Letter"
-              hint="A reference letter from your previous landlord (PDF or image)"
-              category="landlord_reference"
-              file={files.landlord_reference}
-              uploading={uploading.landlord_reference || false}
-              onUpload={handleUpload}
-              onRemove={handleRemove}
-            />
+            <DropZone label="Landlord Reference Letter" hint="A reference letter from your previous landlord (PDF or image)" category="landlord_reference" file={files.landlord_reference} uploading={uploading.landlord_reference || false} onUpload={handleUpload} onRemove={handleRemove} />
             {!files.landlord_reference && (
               <div className="mt-3">
-                <label className={labelClass}>
-                  If unavailable, please explain why
-                </label>
-                <textarea
-                  value={noReferenceReason}
-                  onChange={(e) => setNoReferenceReason(e.target.value)}
-                  className={`${inputClass} resize-none`}
-                  rows={2}
-                  placeholder="e.g. First time renting, landlord unreachable..."
-                />
+                <label className={labelClass}>If unavailable, please explain why</label>
+                <textarea value={noReferenceReason} onChange={(e) => setNoReferenceReason(e.target.value)} className={`${inputClass} resize-none`} rows={2} placeholder="e.g. First time renting, landlord unreachable..." />
               </div>
             )}
           </div>
         )}
 
-        {/* ── Additional Documents (Optional) ── */}
         <div>
           <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2 mb-2">
             <FileText className="w-4 h-4 text-zinc-400" />
@@ -455,32 +393,21 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
             <span className="text-xs font-normal text-zinc-400 ml-1">(Optional)</span>
           </h3>
           <p className="text-xs text-zinc-500 mb-4">
-            Upload any supporting documents such as student visa, work permit, co-signer authorization,
-            bank statements, credit report, or any other relevant paperwork.
+            Upload any supporting documents such as student visa, work permit, co-signer authorization, bank statements, credit report, or any other relevant paperwork.
           </p>
-
-          {/* Uploaded additional docs list */}
           {additionalDocs.length > 0 && (
             <div className="space-y-2 mb-4">
               {additionalDocs.map((doc, i) => (
-                <div
-                  key={doc.id || i}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl bg-green-50 border border-green-200"
-                >
+                <div key={doc.id || i} className="flex items-center justify-between px-4 py-3 rounded-xl bg-green-50 border border-green-200">
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
                     <div>
                       <p className="text-sm font-medium text-green-800">{doc.name}</p>
-                      <p className="text-[10px] text-green-600 uppercase tracking-wider font-bold">
-                        Additional Document
-                      </p>
+                      <p className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Additional Document</p>
                     </div>
                   </div>
                   {doc.id && (
-                    <button
-                      onClick={() => removeAdditionalDoc(doc.id!)}
-                      className="p-1.5 text-green-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                    >
+                    <button onClick={() => removeAdditionalDoc(doc.id!)} className="p-1.5 text-green-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
@@ -488,20 +415,11 @@ const DocumentsTab: React.FC<Props> = ({ session, token, onContinue, onError }) 
               ))}
             </div>
           )}
-
-          {/* Upload button — always visible so user can add multiple */}
-          <AddDocButton
-            uploading={additionalUploading}
-            onUpload={handleAdditionalUpload}
-          />
+          <AddDocButton uploading={additionalUploading} onUpload={handleAdditionalUpload} />
         </div>
       </div>
 
-      <button
-        onClick={handleContinue}
-        disabled={!canProceed()}
-        className="w-full mt-8 bg-zinc-900 text-white rounded-xl p-3 font-medium disabled:opacity-40 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
-      >
+      <button onClick={handleContinue} disabled={!canProceed()} className="w-full mt-8 bg-zinc-900 text-white rounded-xl p-3 font-medium disabled:opacity-40 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2">
         Continue to Signing
       </button>
     </motion.div>

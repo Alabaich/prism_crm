@@ -469,3 +469,15 @@ class SigningSession(Base):
     package = relationship("DocumentPackage", back_populates="signing_sessions")
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
     lead = relationship("Lead", foreign_keys=[lead_id])
+
+    # --- OTP Authentication ---
+    otp_code = Column(String(6), nullable=True)
+    otp_expires_at = Column(DateTime, nullable=True)
+    otp_attempts = Column(Integer, default=0)
+    otp_generated_count = Column(Integer, default=0)
+    otp_generated_reset_at = Column(DateTime, nullable=True)
+ 
+    # --- Authenticated Session ---
+    session_token = Column(String(128), nullable=True, index=True)
+    session_expires_at = Column(DateTime, nullable=True)
+    session_last_activity = Column(DateTime, nullable=True)

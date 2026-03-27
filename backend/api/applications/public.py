@@ -7,8 +7,11 @@ from models import Application, Lead, SigningSession, DocumentPackage, PackageDo
 import logging
 import os
 import sys
-from datetime import datetime
+import secrets
+import random
+from datetime import datetime, timedelta
 from services.pdf.pipeline import trigger_pipeline_if_complete
+from mailer import send_email_smtp
 
 router = APIRouter()
 
@@ -44,6 +47,9 @@ def get_db():
 
 class ConsentSubmit(BaseModel):
     ip_address: Optional[str] = None
+
+class OtpVerify(BaseModel):
+    code: str
 
 class ApplicationFormSubmit(BaseModel):
     building: Optional[str] = None
@@ -135,12 +141,136 @@ def get_signer_index(session: SigningSession, db: Session) -> int:
     return 0
 
 
+def mask_email(email: str) -> str:
+    """Mask email for display: jo***@gm***.com"""
+    if not email or "@" not in email:
+        return "***@***.***"
+    local, domain = email.rsplit("@", 1)
+    domain_parts = domain.rsplit(".", 1)
+    masked_local = local[:2] + "***" if len(local) > 2 else local[0] + "***"
+    masked_domain = domain_parts[0][:2] + "***" if len(domain_parts[0]) > 2 else domain_parts[0]
+    return f"{masked_local}@{masked_domain}.{domain_parts[1]}" if len(domain_parts) > 1 else f"{masked_local}@{masked_domain}"
+
+
+def has_saved_data(session: SigningSession, db: Session) -> bool:
+    """Check if this session has any saved form/document data worth protecting."""
+    if not session.consent_given_at:
+        return False
+
+    package = db.query(DocumentPackage).filter(DocumentPackage.id == session.package_id).first()
+    if not package or not package.lead_id:
+        return False
+
+    app = db.query(Application).filter(Application.lead_id == package.lead_id).first()
+    if not app:
+        return False
+
+    check_fields = [
+        app.employer_name, app.monthly_income, app.position_held,
+        app.date_of_birth, app.sin_number, app.drivers_license,
+        app.bank_name, app.chequing_account,
+    ]
+    return any(f is not None and str(f).strip() for f in check_fields)
+
+
+def validate_session_token(session: SigningSession, request: Request) -> bool:
+    """Validate the session token from the request header."""
+    token = request.headers.get("X-Session-Token")
+    if not token or not session.session_token:
+        return False
+    if token != session.session_token:
+        return False
+    if session.session_expires_at and datetime.utcnow() > session.session_expires_at:
+        return False
+    if session.session_last_activity:
+        inactivity = (datetime.utcnow() - session.session_last_activity).total_seconds()
+        if inactivity > 20 * 60:  # 20 minute inactivity timeout
+            return False
+    return True
+
+
+def require_session_token(session: SigningSession, request: Request, db: Session):
+    """
+    Enforce session token on endpoints that expose or modify sensitive data.
+    Only enforced when the session has saved data (i.e. OTP was required).
+    If no saved data exists (first-time user), skip the check.
+    """
+    if not has_saved_data(session, db):
+        return  # First-time visit, no data to protect yet
+
+    if not validate_session_token(session, request):
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired or not authenticated. Please verify with OTP."
+        )
+
+    # Update last activity timestamp
+    session.session_last_activity = datetime.utcnow()
+    db.commit()
+
+
+def send_otp_email(signer_name: str, signer_email: str, otp_code: str) -> bool:
+    """Send OTP verification email."""
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 0; }}
+            .container {{ max-width: 480px; margin: 30px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }}
+            .header {{ background: #1a1a1a; padding: 28px; text-align: center; }}
+            .header h1 {{ margin: 0; color: #ffffff; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }}
+            .content {{ padding: 36px 32px; text-align: center; }}
+            .code-box {{ background: #f8f9fc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0; }}
+            .code {{ font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1a1a1a; font-family: 'Courier New', monospace; }}
+            .footer {{ text-align: center; padding: 20px 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Prism &middot; Verification Code</h1>
+            </div>
+            <div class="content">
+                <p style="font-size: 16px; color: #334155; margin-top: 0;">Hi {signer_name},</p>
+                <p style="font-size: 14px; color: #64748b;">Enter this code to continue your rental application:</p>
+                <div class="code-box">
+                    <div class="code">{otp_code}</div>
+                </div>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 0;">This code expires in 10 minutes.<br>If you didn't request this, you can safely ignore it.</p>
+            </div>
+            <div class="footer">
+                &copy; {datetime.now().year} Prism Property Management. All rights reserved.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text = f"""Hi {signer_name},
+
+Your verification code is: {otp_code}
+
+This code expires in 10 minutes.
+If you didn't request this, you can safely ignore it.
+
+— Prism Property Management
+"""
+    return send_email_smtp(
+        to_recipients=[signer_email],
+        subject=f"Your verification code: {otp_code}",
+        html_body=html,
+        text_body=text,
+    )
+
+
 # =============================================================================
 # ENDPOINTS
 # =============================================================================
 
 @router.get("/apply/{token}")
-def get_signing_session(token: str, db: Session = Depends(get_db)):
+def get_signing_session(token: str, request: Request, db: Session = Depends(get_db)):
     session = get_valid_session(token, db)
 
     if session.status == "pending":
@@ -155,6 +285,40 @@ def get_signing_session(token: str, db: Session = Depends(get_db)):
 
     signer_index = get_signer_index(session, db)
 
+    # ── OTP Gate ──
+    needs_otp = has_saved_data(session, db)
+    otp_verified = False
+
+    if needs_otp:
+        otp_verified = validate_session_token(session, request)
+        if otp_verified:
+            session.session_last_activity = datetime.utcnow()
+            db.commit()
+
+    # If OTP is needed but not verified, return limited info
+    if needs_otp and not otp_verified:
+        return {
+            "session_id": session.id,
+            "signer_name": session.signer_name,
+            "signer_email": mask_email(session.signer_email),
+            "signer_index": signer_index,
+            "status": session.status,
+            "consent_given": session.consent_given_at is not None,
+            "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+            "building": package.building if package else None,
+            "unit_number": package.unit_number if package else None,
+            "lease_start": None,
+            "monthly_rent": None,
+            "documents": [],
+            "prefill": None,
+            "total_documents": 0,
+            "signed_documents": 0,
+            "all_signed": False,
+            "requires_otp": True,
+            "otp_verified": False,
+        }
+
+    # ── Full data response (first visit OR OTP verified) ──
     lead = None
     app = None
     if package and package.lead_id:
@@ -266,8 +430,110 @@ def get_signing_session(token: str, db: Session = Depends(get_db)):
         "total_documents": len(documents),
         "signed_documents": len(signed_docs),
         "all_signed": len(signed_docs) >= len(documents),
+        "requires_otp": False,
+        "otp_verified": True if needs_otp else False,
     }
 
+
+# ── OTP Endpoints ─────────────────────────────────────────────────────────────
+
+@router.post("/apply/{token}/otp/request")
+def request_otp(token: str, db: Session = Depends(get_db)):
+    """Generate and send a 6-digit OTP to the signer's email."""
+    session = get_valid_session(token, db)
+
+    now = datetime.utcnow()
+    if session.otp_generated_reset_at and (now - session.otp_generated_reset_at).total_seconds() > 3600:
+        session.otp_generated_count = 0
+        session.otp_generated_reset_at = now
+
+    if not session.otp_generated_reset_at:
+        session.otp_generated_reset_at = now
+
+    if (session.otp_generated_count or 0) >= 5:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many verification codes requested. Please try again later."
+        )
+
+    otp_code = f"{random.randint(0, 999999):06d}"
+
+    session.otp_code = otp_code
+    session.otp_expires_at = now + timedelta(minutes=10)
+    session.otp_attempts = 0
+    session.otp_generated_count = (session.otp_generated_count or 0) + 1
+    db.commit()
+
+    sent = send_otp_email(session.signer_name, session.signer_email, otp_code)
+    if not sent:
+        logger.error(f"❌ Failed to send OTP email to {session.signer_email}")
+        raise HTTPException(status_code=500, detail="Failed to send verification code. Please try again.")
+
+    logger.info(f"🔐 OTP sent to {mask_email(session.signer_email)} for session {session.id}")
+
+    return {
+        "status": "ok",
+        "message": "Verification code sent",
+        "email": mask_email(session.signer_email),
+    }
+
+
+@router.post("/apply/{token}/otp/verify")
+def verify_otp(token: str, payload: OtpVerify, db: Session = Depends(get_db)):
+    """Verify the OTP code and issue a session token."""
+    session = get_valid_session(token, db)
+
+    if not session.otp_code or not session.otp_expires_at:
+        raise HTTPException(status_code=400, detail="No verification code has been requested.")
+
+    if datetime.utcnow() > session.otp_expires_at:
+        session.otp_code = None
+        session.otp_expires_at = None
+        db.commit()
+        raise HTTPException(status_code=410, detail="Verification code has expired. Please request a new one.")
+
+    if (session.otp_attempts or 0) >= 5:
+        session.otp_code = None
+        session.otp_expires_at = None
+        db.commit()
+        raise HTTPException(
+            status_code=429,
+            detail="Too many incorrect attempts. Please request a new code."
+        )
+
+    session.otp_attempts = (session.otp_attempts or 0) + 1
+
+    if payload.code.strip() != session.otp_code:
+        db.commit()
+        remaining = 5 - session.otp_attempts
+        raise HTTPException(
+            status_code=401,
+            detail=f"Incorrect code. {remaining} attempt{'s' if remaining != 1 else ''} remaining."
+        )
+
+    # OTP verified — issue session token
+    now = datetime.utcnow()
+    session_token = secrets.token_hex(64)
+
+    session.otp_code = None
+    session.otp_expires_at = None
+    session.otp_attempts = 0
+    session.session_token = session_token
+    session.session_expires_at = now + timedelta(hours=4)
+    session.session_last_activity = now
+    db.commit()
+
+    logger.info(f"✅ OTP verified for session {session.id} ({mask_email(session.signer_email)})")
+
+    return {
+        "status": "ok",
+        "session_token": session_token,
+        "expires_in": 4 * 3600,
+        "inactivity_timeout": 20 * 60,
+    }
+
+
+# ── Application Flow Endpoints ────────────────────────────────────────────────
 
 @router.post("/apply/{token}/consent")
 def submit_consent(token: str, payload: ConsentSubmit, request: Request, db: Session = Depends(get_db)):
@@ -283,8 +549,9 @@ def submit_consent(token: str, payload: ConsentSubmit, request: Request, db: Ses
 
 
 @router.post("/apply/{token}/form")
-def submit_form(token: str, payload: ApplicationFormSubmit, db: Session = Depends(get_db)):
+def submit_form(token: str, payload: ApplicationFormSubmit, request: Request, db: Session = Depends(get_db)):
     session = get_valid_session(token, db)
+    require_session_token(session, request, db)
 
     if not session.consent_given_at:
         raise HTTPException(status_code=400, detail="Consent must be given before submitting form data")
@@ -300,15 +567,11 @@ def submit_form(token: str, payload: ApplicationFormSubmit, db: Session = Depend
     signer_index = get_signer_index(session, db)
 
     if signer_index == 0:
-        # ── APPLICANT 1 ──
-
-        # Property details (applicant can change)
         if payload.building is not None:      package.building = payload.building
         if payload.unit_number is not None:   package.unit_number = payload.unit_number
         if payload.lease_start is not None:   package.lease_start = payload.lease_start
         if payload.monthly_rent is not None:  package.monthly_rent = payload.monthly_rent
 
-        # Lead contact info
         if payload.prospect_name is not None:
             lead = db.query(Lead).filter(Lead.id == package.lead_id).first()
             if lead:
@@ -361,7 +624,6 @@ def submit_form(token: str, payload: ApplicationFormSubmit, db: Session = Depend
         logger.info(f"📝 Applicant 1 form data saved for session {session.id}")
 
     elif signer_index == 1:
-        # ── APPLICANT 2 — saves to co_applicants[0] JSON ──
         co_data = {
             "name": payload.prospect_name or session.signer_name,
             "email": payload.email or session.signer_email,
@@ -404,11 +666,14 @@ def submit_form(token: str, payload: ApplicationFormSubmit, db: Session = Depend
 @router.post("/apply/{token}/upload")
 async def upload_document(
     token: str,
+    request: Request,
     file: UploadFile = File(...),
     category: str = Form(...),
     db: Session = Depends(get_db)
 ):
     session = get_valid_session(token, db)
+    require_session_token(session, request, db)
+
     if not session.consent_given_at:
         raise HTTPException(status_code=400, detail="Consent must be given before uploading")
 
@@ -469,6 +734,7 @@ async def upload_document(
         db.commit()
         logger.info(f"📊 Auto-analysis: {len(analysis.get('risk_signals', []))} signals")
     except Exception as e:
+        db.rollback()
         logger.error(f"⚠️ Analysis failed (non-blocking): {e}")
 
     return {"status": "ok", "doc_id": doc.id, "file_name": file.filename, "category": category}
@@ -477,6 +743,8 @@ async def upload_document(
 @router.post("/apply/{token}/sign")
 def submit_signature(token: str, payload: SignatureSubmit, request: Request, db: Session = Depends(get_db)):
     session = get_valid_session(token, db)
+    require_session_token(session, request, db)
+
     if not session.consent_given_at:
         raise HTTPException(status_code=400, detail="Consent must be given before signing")
 
