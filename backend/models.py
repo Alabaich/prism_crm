@@ -481,3 +481,6 @@ class SigningSession(Base):
     session_token = Column(String(128), nullable=True, index=True)
     session_expires_at = Column(DateTime, nullable=True)
     session_last_activity = Column(DateTime, nullable=True)
+
+    reminded_48h = Column(Boolean, default=False)
+    reminded_96h = Column(Boolean, default=False)
