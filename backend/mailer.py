@@ -342,6 +342,142 @@ The Prism Team
 
     return send_email_smtp(recipients, subject, html_content, text_content)
 
+
+# --- Application reminder: 48 hours ---
+def send_application_reminder_48h(signer_name: str, signer_email: str, token: str, building: Optional[str]) -> bool:
+    """Send a friendly 48-hour nudge to an applicant who hasn't completed their application."""
+    BASE_URL = os.getenv("FRONTEND_URL", "https://prismpm.cloud")
+    signing_url = f"{BASE_URL}/pub_apply/{token}"
+    building_line = f" for <strong>{building}</strong>" if building else ""
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }}
+            .header {{ background: #1a1a1a; padding: 24px; text-align: center; }}
+            .header h1 {{ margin: 0; color: #ffffff; font-size: 24px; font-weight: 500; }}
+            .content {{ padding: 32px; }}
+            .cta-button {{ display: inline-block; background: #1a1a1a; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 24px 0; }}
+            .footer {{ text-align: center; padding: 24px; font-size: 14px; color: #94a3b8; border-top: 1px solid #eaeef5; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Prism · Application Reminder</h1>
+            </div>
+            <div class="content">
+                <p style="font-size: 18px; margin-top: 0;">Hi {signer_name},</p>
+                <p>Just a friendly reminder — your rental application{building_line} is still waiting to be completed.</p>
+                <p>It only takes a few minutes. Click the button below to pick up right where you left off.</p>
+                <div style="text-align: center;">
+                    <a href="{signing_url}" class="cta-button">Complete My Application</a>
+                </div>
+                <p style="font-size: 13px; color: #94a3b8;">If the button doesn't work, copy and paste this link into your browser:<br>{signing_url}</p>
+                <p style="margin-bottom: 0;">Best regards,<br><strong>Prism Property Management</strong></p>
+            </div>
+            <div class="footer">
+                <p>© {datetime.now().year} Prism Property Management. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text = f"""Hi {signer_name},
+
+Just a friendly reminder — your rental application{' for ' + building if building else ''} is still waiting to be completed.
+
+Complete your application here:
+{signing_url}
+
+Best regards,
+Prism Property Management
+"""
+    return send_email_smtp(
+        to_recipients=[signer_email],
+        subject="Reminder: Your application is still waiting",
+        html_body=html,
+        text_body=text
+    )
+
+
+# --- Application reminder: 96 hours ---
+def send_application_reminder_96h(signer_name: str, signer_email: str, token: str, building: Optional[str]) -> bool:
+    """Send a final-reminder 96-hour nudge to an applicant who hasn't completed their application."""
+    BASE_URL = os.getenv("FRONTEND_URL", "https://prismpm.cloud")
+    signing_url = f"{BASE_URL}/pub_apply/{token}"
+    building_line = f" for <strong>{building}</strong>" if building else ""
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }}
+            .header {{ background: #1a1a1a; padding: 24px; text-align: center; }}
+            .header h1 {{ margin: 0; color: #ffffff; font-size: 24px; font-weight: 500; }}
+            .content {{ padding: 32px; }}
+            .cta-button {{ display: inline-block; background: #1a1a1a; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 24px 0; }}
+            .notice {{ background: #fff8ed; border: 1px solid #f5d98b; border-radius: 10px; padding: 16px 20px; margin: 24px 0; font-size: 14px; color: #7a4f00; }}
+            .footer {{ text-align: center; padding: 24px; font-size: 14px; color: #94a3b8; border-top: 1px solid #eaeef5; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Prism · Final Reminder</h1>
+            </div>
+            <div class="content">
+                <p style="font-size: 18px; margin-top: 0;">Hi {signer_name},</p>
+                <p>This is your final reminder — your rental application{building_line} is still incomplete.</p>
+                <div class="notice">
+                    ⚠️ Your application link will expire soon. Please complete it as soon as possible to keep your spot.
+                </div>
+                <div style="text-align: center;">
+                    <a href="{signing_url}" class="cta-button">Complete My Application</a>
+                </div>
+                <p style="font-size: 13px; color: #94a3b8;">If the button doesn't work, copy and paste this link into your browser:<br>{signing_url}</p>
+                <p>If you have any questions or need help, just reply to this email.</p>
+                <p style="margin-bottom: 0;">Best regards,<br><strong>Prism Property Management</strong></p>
+            </div>
+            <div class="footer">
+                <p>© {datetime.now().year} Prism Property Management. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text = f"""Hi {signer_name},
+
+This is your final reminder — your rental application{' for ' + building if building else ''} is still incomplete.
+
+Your application link will expire soon. Please complete it as soon as possible to keep your spot.
+
+Complete your application here:
+{signing_url}
+
+If you have any questions, just reply to this email.
+
+Best regards,
+Prism Property Management
+"""
+    return send_email_smtp(
+        to_recipients=[signer_email],
+        subject="Final reminder: Your application link expires soon",
+        html_body=html,
+        text_body=text
+    )
+
 # Example usage (for testing)
 if __name__ == "__main__":
     test_booking = {
