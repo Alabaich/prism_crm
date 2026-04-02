@@ -9,7 +9,7 @@ export default defineConfig({
   ],
   server: {
     host: true, // You probably already have this for Docker
-    port: 5173,
+    port: 5176,
     // Add this allowedHosts array:
     allowedHosts: [
       'prismpm.cloud',

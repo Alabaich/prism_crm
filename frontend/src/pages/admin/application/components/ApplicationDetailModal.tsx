@@ -18,6 +18,7 @@ import {
   Users,
   Home,
   AlertCircle,
+  Paperclip,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
@@ -52,14 +53,15 @@ interface ApplicationDetailData {
   has_pet: boolean;
   pet_details: string | null;
   parking_requested: boolean;
-  landlord_reference_id: number | null;
   parking_spot: string | null;
+  landlord_reference_id: number | null;
   previous_addresses: any[] | null;
   vacating_reason: string | null;
   id_document_id: number | null;
   income_proof_id: number | null;
   signed_form_410_id: number | null;
   signed_consent_id: number | null;
+  additional_doc_ids: number[];
   status: string;
   approved_at: string | null;
   rejection_reason: string | null;
@@ -70,11 +72,11 @@ interface ApplicationDetailData {
 // ── Helpers ──────────────────────────────────────────────────
 
 const signerStatusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-  pending: { bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400" },
-  in_progress: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  declined: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-  expired: { bg: "bg-slate-50", text: "text-slate-500", dot: "bg-slate-300" },
+  pending:     { bg: "bg-slate-50",   text: "text-slate-600",   dot: "bg-slate-400"   },
+  in_progress: { bg: "bg-blue-50",    text: "text-blue-700",    dot: "bg-blue-500"    },
+  completed:   { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+  declined:    { bg: "bg-red-50",     text: "text-red-700",     dot: "bg-red-500"     },
+  expired:     { bg: "bg-slate-50",   text: "text-slate-500",   dot: "bg-slate-300"   },
 };
 
 const InfoRow: React.FC<{ label: string; value: string | null | undefined; highlight?: boolean }> = ({ label, value, highlight }) => (
@@ -93,19 +95,19 @@ const SectionHeader: React.FC<{ icon: React.ReactNode; title: string }> = ({ ico
   </div>
 );
 
-const DownloadButton: React.FC<{ docId: number | null; label: string }> = ({ docId, label }) => {
+const DownloadButton: React.FC<{ docId: number | null | undefined; label: string }> = ({ docId, label }) => {
   if (!docId) {
     return (
       <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-xl text-slate-400 text-sm">
         <FileText className="w-4 h-4" />
         {label}
-        <span className="ml-auto text-[10px] font-bold uppercase tracking-wider">Not yet generated</span>
+        <span className="ml-auto text-[10px] font-bold uppercase tracking-wider">Not uploaded</span>
       </div>
     );
   }
   return (
     <a
-      href={`/docs/${docId}/download`}
+      href={"/docs/" + docId + "/download"}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all group"
@@ -137,7 +139,7 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
   useEffect(() => {
     if (!isOpen || !applicationId) { setDetail(null); setError(""); return; }
     setLoading(true);
-    fetch(`/applications/${applicationId}`)
+    fetch("/applications/" + applicationId)
       .then((r) => { if (!r.ok) throw new Error("Failed"); return r.json(); })
       .then(setDetail)
       .catch((e) => setError(e.message))
@@ -145,7 +147,7 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
   }, [isOpen, applicationId]);
 
   const handleCopyLink = async (token: string) => {
-    const url = `${window.location.origin}/pub_apply/${token}`;
+    const url = window.location.origin + "/pub_apply/" + token;
     try { await navigator.clipboard.writeText(url); } catch {
       const inp = document.createElement("input"); inp.value = url;
       document.body.appendChild(inp); inp.select(); document.execCommand("copy"); document.body.removeChild(inp);
@@ -167,6 +169,7 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
 
       <div className="relative bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/40">
           <div className="flex items-center gap-4">
@@ -221,8 +224,8 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                 ))}
               </div>
 
-              {/* Employment */}
-              <SectionHeader icon={<Briefcase className="w-3.5 h-3.5" />} title="Employment" />
+              {/* Employment — Primary Applicant */}
+              <SectionHeader icon={<Briefcase className="w-3.5 h-3.5" />} title="Employment \u2014 Primary Applicant" />
               <div className="bg-slate-50 rounded-xl px-4 py-1">
                 <InfoRow label="Employer" value={detail.employer_name} />
                 <InfoRow label="Position" value={detail.position_held} />
@@ -230,20 +233,45 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                 <InfoRow label="Monthly Income" value={detail.monthly_income} highlight />
               </div>
 
-              {/* Additional */}
+              {/* Co-applicants */}
+              {detail.co_applicants && detail.co_applicants.length > 0 && (
+                <>
+                  <SectionHeader icon={<Users className="w-3.5 h-3.5" />} title="Co-Applicants" />
+                  {detail.co_applicants.map((co: any, i: number) => (
+                    <div key={i} className="bg-slate-50 rounded-xl px-4 py-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-800">{co.name || "\u2014"}</div>
+                          <div className="text-xs text-slate-500">{co.email}</div>
+                        </div>
+                        {co.monthly_income && (
+                          <span className="text-sm font-bold text-slate-700">${co.monthly_income}/mo</span>
+                        )}
+                      </div>
+                      {(co.employer_name || co.occupation) && (
+                        <div className="text-xs text-slate-500">
+                          {co.position_held || co.occupation}{co.employer_name ? " at " + co.employer_name : ""}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Additional info */}
               <SectionHeader icon={<Home className="w-3.5 h-3.5" />} title="Additional" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className={`rounded-xl px-4 py-3 ${detail.has_pet ? "bg-amber-50 border border-amber-200" : "bg-slate-50"}`}>
+                <div className={"rounded-xl px-4 py-3 " + (detail.has_pet ? "bg-amber-50 border border-amber-200" : "bg-slate-50")}>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5"><PawPrint className="w-3 h-3" /> Pet</div>
-                  <div className={`text-sm font-semibold ${detail.has_pet ? "text-amber-700" : "text-slate-400"}`}>{detail.has_pet ? detail.pet_details || "Yes" : "No"}</div>
+                  <div className={"text-sm font-semibold " + (detail.has_pet ? "text-amber-700" : "text-slate-400")}>{detail.has_pet ? detail.pet_details || "Yes" : "No"}</div>
                 </div>
-                <div className={`rounded-xl px-4 py-3 ${detail.parking_requested ? "bg-blue-50 border border-blue-200" : "bg-slate-50"}`}>
+                <div className={"rounded-xl px-4 py-3 " + (detail.parking_requested ? "bg-blue-50 border border-blue-200" : "bg-slate-50")}>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5"><Car className="w-3 h-3" /> Parking</div>
-                  <div className={`text-sm font-semibold ${detail.parking_requested ? "text-blue-700" : "text-slate-400"}`}>{detail.parking_requested ? detail.parking_spot || "Requested" : "No"}</div>
+                  <div className={"text-sm font-semibold " + (detail.parking_requested ? "text-blue-700" : "text-slate-400")}>{detail.parking_requested ? detail.parking_spot || "Requested" : "No"}</div>
                 </div>
-                <div className={`rounded-xl px-4 py-3 ${detail.id_verified ? "bg-green-50 border border-green-200" : "bg-slate-50"}`}>
+                <div className={"rounded-xl px-4 py-3 " + (detail.id_verified ? "bg-green-50 border border-green-200" : "bg-slate-50")}>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5"><Shield className="w-3 h-3" /> ID</div>
-                  <div className={`text-sm font-semibold ${detail.id_verified ? "text-green-700" : "text-slate-400"}`}>{detail.id_verified ? "Verified" : "Not yet"}</div>
+                  <div className={"text-sm font-semibold " + (detail.id_verified ? "text-green-700" : "text-slate-400")}>{detail.id_verified ? "Verified" : "Not yet"}</div>
                 </div>
               </div>
 
@@ -258,22 +286,6 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                 </>
               )}
 
-              {/* Co-applicants */}
-              {detail.co_applicants && detail.co_applicants.length > 0 && (
-                <>
-                  <SectionHeader icon={<Users className="w-3.5 h-3.5" />} title="Co-Applicants" />
-                  {detail.co_applicants.map((co: any, i: number) => (
-                    <div key={i} className="bg-slate-50 rounded-xl px-4 py-3 flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800">{co.name || "\u2014"}</div>
-                        <div className="text-xs text-slate-500">{co.occupation} {co.employer ? `at ${co.employer}` : ""}</div>
-                      </div>
-                      {co.monthly_income && <span className="text-sm font-bold text-slate-700">${co.monthly_income}/mo</span>}
-                    </div>
-                  ))}
-                </>
-              )}
-
               {/* Previous Addresses */}
               {detail.previous_addresses && detail.previous_addresses.length > 0 && (
                 <>
@@ -282,16 +294,16 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                     <div key={i} className="bg-slate-50 rounded-xl px-4 py-3">
                       <div className="text-sm font-semibold text-slate-800">{addr.address || "\u2014"}</div>
                       <div className="text-xs text-slate-500 mt-1">
-                        {addr.from && addr.to && `${addr.from} \u2014 ${addr.to}`}
-                        {addr.landlord_name && ` \u00B7 Landlord: ${addr.landlord_name}`}
-                        {addr.landlord_phone && ` (${addr.landlord_phone})`}
+                        {addr.from && addr.to && addr.from + " \u2014 " + addr.to}
+                        {addr.landlord_name && " \u00B7 Landlord: " + addr.landlord_name}
+                        {addr.landlord_phone && " (" + addr.landlord_phone + ")"}
                       </div>
                     </div>
                   ))}
                 </>
               )}
 
-              {/* Vacating */}
+              {/* Vacating reason */}
               {detail.vacating_reason && (
                 <>
                   <SectionHeader icon={<Home className="w-3.5 h-3.5" />} title="Reason for Vacating" />
@@ -299,16 +311,16 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                 </>
               )}
 
-              {/* Signers */}
+              {/* Signing Progress */}
               <SectionHeader icon={<FileText className="w-3.5 h-3.5" />} title="Signing Progress" />
               <div className="space-y-2">
                 {detail.signing_sessions.map((s, i) => {
                   const cfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
                   const copied = copiedToken === s.token;
                   return (
-                    <div key={i} className={`flex items-center justify-between px-4 py-3 rounded-xl ${cfg.bg}`}>
+                    <div key={i} className={"flex items-center justify-between px-4 py-3 rounded-xl " + cfg.bg}>
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                        <div className={"w-2 h-2 rounded-full " + cfg.dot} />
                         <div>
                           <span className="text-sm font-semibold text-slate-800">{s.signer_name}</span>
                           <span className="text-xs text-slate-500 ml-2">{s.signer_email}</span>
@@ -316,8 +328,8 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                       </div>
                       <div className="flex items-center gap-2">
                         {s.consent_given_at && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Consented</span>}
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${cfg.text}`}>{s.status.replace("_", " ")}</span>
-                        <button onClick={() => handleCopyLink(s.token)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${copied ? "bg-green-100 text-green-700 border border-green-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}>
+                        <span className={"px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider " + cfg.text}>{s.status.replace("_", " ")}</span>
+                        <button onClick={() => handleCopyLink(s.token)} className={"flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all " + (copied ? "bg-green-100 text-green-700 border border-green-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}>
                           {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Link2 className="w-3 h-3" /> Link</>}
                         </button>
                       </div>
@@ -326,15 +338,56 @@ const ApplicationDetailModal: React.FC<Props> = ({ applicationId, isOpen, onClos
                 })}
               </div>
 
-              {/* Documents */}
-              <SectionHeader icon={<Download className="w-3.5 h-3.5" />} title="Documents" />
+              {/* Merge & Download All */}
+<div className="mt-6 mb-2">
+  <a
+    href={"/docs/application/" + detail.id + "/merge-download"}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-zinc-900 text-white rounded-xl text-sm font-bold hover:bg-zinc-800 transition-all"
+  >
+    <Download className="w-4 h-4" />
+    Download All Documents (Merged PDF)
+  </a>
+</div>
+
+              {/* Documents — Primary Applicant */}
+              <SectionHeader icon={<Download className="w-3.5 h-3.5" />} title="Documents \u2014 Primary Applicant" />
               <div className="space-y-2">
                 <DownloadButton docId={detail.signed_form_410_id} label="Form 410 \u2014 Rental Application (Signed)" />
                 <DownloadButton docId={detail.signed_consent_id} label="Schedule A \u2014 Privacy Consent (Signed)" />
-                <DownloadButton docId={detail.id_document_id} label="ID Document" />
+                <DownloadButton docId={detail.id_document_id} label="Photo ID" />
                 <DownloadButton docId={detail.income_proof_id} label="Income Proof" />
                 <DownloadButton docId={detail.landlord_reference_id} label="Landlord Reference" />
               </div>
+
+              {/* Documents — Co-applicants */}
+              {detail.co_applicants && detail.co_applicants.map((co: any, i: number) => {
+                const hasAnyDoc = co.id_document_id || co.income_proof_id || co.landlord_reference_id;
+                if (!hasAnyDoc) return null;
+                return (
+                  <React.Fragment key={i}>
+                    <SectionHeader icon={<Download className="w-3.5 h-3.5" />} title={"Documents \u2014 " + (co.name || ("Co-Applicant " + (i + 1)))} />
+                    <div className="space-y-2">
+                      <DownloadButton docId={co.id_document_id} label="Photo ID" />
+                      <DownloadButton docId={co.income_proof_id} label="Income Proof" />
+                      <DownloadButton docId={co.landlord_reference_id} label="Landlord Reference" />
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Additional Documents */}
+              {detail.additional_doc_ids && detail.additional_doc_ids.length > 0 && (
+                <>
+                  <SectionHeader icon={<Paperclip className="w-3.5 h-3.5" />} title={"Additional Documents (" + detail.additional_doc_ids.length + ")"} />
+                  <div className="space-y-2">
+                    {detail.additional_doc_ids.map((docId: number, i: number) => (
+                      <DownloadButton key={docId} docId={docId} label={"Additional Document " + (i + 1)} />
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Status info */}
               {detail.rejection_reason && (
